@@ -1,3 +1,7 @@
+#include <QtGlobal>
+#ifndef Q_OS_MACOS
+int main(int, char*[]) { return 0; }
+#else
 #include <QtTest>
 #include <QCoreApplication>
 #include "backend/macos/ProcessWatcherMacOS.h"
@@ -8,7 +12,6 @@ class ProcessWatcherTest : public QObject {
 private slots:
     void testInitialValues() {
         ProcessWatcherMacOS watcher;
-        
         QVERIFY(watcher.processes().isEmpty());
     }
 
@@ -18,7 +21,6 @@ private slots:
         
         QVERIFY(!watcher.processes().isEmpty());
         
-        // At least kernel_task or launchd or TraceUI itself should be running
         bool foundTraceUI = false;
         const auto procs = watcher.processes();
         for (const QVariant& pVar : procs) {
@@ -35,5 +37,5 @@ private slots:
 };
 
 QTEST_MAIN(ProcessWatcherTest)
-
 #include "test_ProcessWatcher.moc"
+#endif

@@ -1,0 +1,84 @@
+import QtQuick
+import TraceUI
+
+Item {
+    id: root
+    width: 400
+    height: 300
+
+    Rectangle {
+        anchors.fill: parent
+        color: Style.panelBg
+        border.color: Style.borderDefault
+        border.width: 1
+    }
+    
+    Item {
+        id: header
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 30
+        
+        Text {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: 10
+            text: "TOP PROCESSES"
+            color: Style.textPrimary
+            font.pixelSize: 12
+            font.family: Style.fontData
+        }
+        
+        Text {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.rightMargin: 10
+            text: "PID | NAME | RAM MB"
+            color: Style.textLabel
+            font.pixelSize: 10
+            font.family: Style.fontData
+        }
+        
+        Rectangle {
+            anchors.bottom: parent.bottom
+            width: parent.width
+            height: 1
+            color: Style.borderDefault
+        }
+    }
+    
+    ListView {
+        anchors.top: header.bottom
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 10
+        clip: true
+        
+        model: processWatcher.processes
+        
+        delegate: Item {
+            width: ListView.view.width
+            height: 20
+            
+            Text {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                text: modelData.pid.toString().padEnd(6, " ") + " " + modelData.name
+                color: Style.accentSilver
+                font.pixelSize: 12
+                font.family: Style.fontData
+            }
+            
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: modelData.ramMB.toFixed(1) + " MB"
+                color: Style.textPrimary
+                font.pixelSize: 12
+                font.family: Style.fontData
+            }
+        }
+    }
+}

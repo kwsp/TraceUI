@@ -1,27 +1,29 @@
 #pragma once
 
 #include <QObject>
-#include <QVariantList>
+#include <QList>
 
 class SystemMonitor : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QVariantList cpuUsagePercent READ cpuUsagePercent NOTIFY dataUpdated)
+    Q_PROPERTY(QList<double> cpuUsagePercent READ cpuUsagePercent NOTIFY dataUpdated)
     Q_PROPERTY(int ramUsedMB READ ramUsedMB NOTIFY dataUpdated)
     Q_PROPERTY(int ramTotalMB READ ramTotalMB NOTIFY dataUpdated)
     Q_PROPERTY(int swapUsedMB READ swapUsedMB NOTIFY dataUpdated)
     Q_PROPERTY(double cpuTempCelsius READ cpuTempCelsius NOTIFY dataUpdated)
     Q_PROPERTY(double loadAverage1m READ loadAverage1m NOTIFY dataUpdated)
+    Q_PROPERTY(QString cpuName READ cpuName CONSTANT)
 
 public:
     explicit SystemMonitor(QObject* parent = nullptr);
     virtual ~SystemMonitor() = default;
 
-    QVariantList cpuUsagePercent() const;
-    int ramUsedMB() const;
-    int ramTotalMB() const;
-    int swapUsedMB() const;
-    double cpuTempCelsius() const;
-    double loadAverage1m() const;
+    [[nodiscard]] QList<double> cpuUsagePercent() const;
+    [[nodiscard]] int ramUsedMB() const;
+    [[nodiscard]] int ramTotalMB() const;
+    [[nodiscard]] int swapUsedMB() const;
+    [[nodiscard]] double cpuTempCelsius() const;
+    [[nodiscard]] double loadAverage1m() const;
+    [[nodiscard]] virtual QString cpuName() const = 0;
 
     virtual void update() = 0;
 
@@ -29,7 +31,7 @@ signals:
     void dataUpdated();
 
 protected:
-    QVariantList m_cpuUsagePercent;
+    QList<double> m_cpuUsagePercent;
     int m_ramUsedMB = 0;
     int m_ramTotalMB = 0;
     int m_swapUsedMB = 0;

@@ -25,7 +25,9 @@ qt_add_qml_module(${PROJECT_NAME}
   QML_FILES
     Style.qml
     Main.qml
-    ClockPanel.qml
+    SystemPanel.qml
+    ProcessPanel.qml
+    NetworkPanel.qml
     GlobePanel.qml
 )
 
@@ -57,6 +59,9 @@ qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
   FILES
     shaders/dotgrid.frag
     shaders/globe.frag
+    shaders/cpugraph.frag
+    shaders/memorygrid.frag
+    shaders/networkgraph.frag
 )
 
 configure_file(config.h.in config.h)

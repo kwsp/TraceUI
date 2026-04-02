@@ -48,17 +48,35 @@ Window {
         property real dotAlpha: 0.2
     }
 
-    GlobePanel {
-        width: 400
-        height: 400
-        anchors.bottom: parent.bottom
+    SystemPanel {
+        id: sysPanel
+        anchors.top: parent.top
         anchors.left: parent.left
         anchors.margins: 24
     }
 
-    ClockPanel {
-        anchors.top: parent.top
-        anchors.right: parent.right
+    GlobePanel {
+        id: globePanel
+        anchors.left: sysPanel.right
+        anchors.top: sysPanel.top
+        width: 400
+        height: 400
         anchors.margins: 24
+    }
+
+    ProcessPanel {
+        id: procPanel
+        anchors.top: sysPanel.bottom
+        anchors.left: parent.left
+        anchors.margins: 24
+        anchors.topMargin: 24
+    }
+
+    NetworkPanel {
+        id: netPanel
+        anchors.top: procPanel.bottom
+        anchors.left: parent.left
+        anchors.margins: 24
+        anchors.topMargin: 24
     }
 }

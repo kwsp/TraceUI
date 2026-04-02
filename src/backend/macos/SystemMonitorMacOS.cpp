@@ -8,6 +8,14 @@ SystemMonitorMacOS::SystemMonitorMacOS(QObject* parent)
     size_t sizeOfNumCPUs = sizeof(m_numCPUs);
     sysctl(mib, 2U, &m_numCPUs, &sizeOfNumCPUs, NULL, 0);
 
+    char buffer[256];
+    size_t bufferlen = sizeof(buffer);
+    if (sysctlbyname("machdep.cpu.brand_string", &buffer, &bufferlen, NULL, 0) == 0) {
+        m_cpuName = QString::fromUtf8(buffer);
+    } else {
+        m_cpuName = "Unknown CPU";
+    }
+
     connect(&m_timer, &QTimer::timeout, this, &SystemMonitorMacOS::performUpdate);
     m_timer.start(1000); // 1 second polling as per architecture docs
 }
@@ -40,7 +48,7 @@ void SystemMonitorMacOS::updateCpuUsage() {
     
     if (err == KERN_SUCCESS) {
         if (m_prevCpuInfo) {
-            QVariantList newUsages;
+            QList<double> newUsages;
             for (unsigned int i = 0; i < m_numCPUs; ++i) {
                 integer_t inUse = (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER]   - m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER])
                                 + (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM] - m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM])

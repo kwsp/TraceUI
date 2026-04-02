@@ -12,8 +12,8 @@ public:
     explicit ProcessWatcher(QObject* parent = nullptr);
     virtual ~ProcessWatcher() = default;
 
-    QVariantList processes() const;
-    QVariantList watchedServices() const;
+    [[nodiscard]] QVariantList processes() const;
+    [[nodiscard]] QVariantList watchedServices() const;
 
     virtual void update() = 0;
 

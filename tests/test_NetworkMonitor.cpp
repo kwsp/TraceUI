@@ -1,3 +1,7 @@
+#include <QtGlobal>
+#ifndef Q_OS_MACOS
+int main(int, char*[]) { return 0; }
+#else
 #include <QtTest>
 #include <QCoreApplication>
 #include <QThread>
@@ -9,7 +13,6 @@ class NetworkMonitorTest : public QObject {
 private slots:
     void testInitialValues() {
         NetworkMonitorMacOS monitor;
-        
         QVERIFY(monitor.downloadBytesPerSec() == 0.0);
         QVERIFY(monitor.uploadBytesPerSec() == 0.0);
     }
@@ -17,11 +20,8 @@ private slots:
     void testUpdateProvidesTraffic() {
         NetworkMonitorMacOS monitor;
         monitor.update();
-        
-        // Let time pass a bit for speed diff
         QThread::msleep(100);
-        
-        monitor.update(); // second update computes speeds
+        monitor.update(); 
         
         QVERIFY(monitor.downloadBytesPerSec() >= 0.0);
         QVERIFY(monitor.uploadBytesPerSec() >= 0.0);
@@ -30,5 +30,5 @@ private slots:
 };
 
 QTEST_MAIN(NetworkMonitorTest)
-
 #include "test_NetworkMonitor.moc"
+#endif
