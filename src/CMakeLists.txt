@@ -3,7 +3,19 @@ qt_standard_project_setup(REQUIRES 6.5)
 
 qt_add_executable(${PROJECT_NAME}
   main.cpp
+  backend/SystemMonitor.cpp
+  backend/ProcessWatcher.cpp
+  backend/NetworkMonitor.cpp
 )
+
+if(APPLE)
+  target_sources(${PROJECT_NAME} PRIVATE 
+    backend/macos/SystemMonitorMacOS.cpp
+    backend/macos/ProcessWatcherMacOS.cpp
+    backend/macos/NetworkMonitorMacOS.cpp
+  )
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation")
+endif()
 
 set_source_files_properties(Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
