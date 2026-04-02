@@ -4,17 +4,33 @@ qt_standard_project_setup(REQUIRES 6.5)
 qt_add_executable(${PROJECT_NAME}
   main.cpp
 )
+
 qt_add_qml_module(${PROJECT_NAME}
   URI ${PROJECT_NAME}
   VERSION ${CMAKE_PROJECT_VERSION}
   QML_FILES
     Main.qml
+    ClockPanel.qml
 )
-
 # This is only needed to debug QML in Qt Creator.
 # target_compile_definitions(${PROJECT_NAME} PRIVATE
 #   "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>"
 # )
+
+qt6_add_resources(${PROJECT_NAME} "traceui-resources"
+  PREFIX "/"
+  FILES
+    fonts/BlenderPro-Bold.ttf
+    fonts/BlenderPro-Book.ttf
+    fonts/BlenderPro-Heavy.ttf
+    fonts/BlenderPro-Medium.ttf
+    fonts/BlenderPro-Thin.ttf
+    fonts/Hack-Regular.ttf
+    fonts/Hack-Bold.ttf
+    fonts/Hack-Italic.ttf
+    fonts/Hack-BoldItalic.ttf
+
+)
 
 qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
   BATCHABLE
