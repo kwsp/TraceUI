@@ -11,6 +11,7 @@ qt_add_qml_module(${PROJECT_NAME}
   QML_FILES
     Main.qml
     ClockPanel.qml
+    GlobePanel.qml
 )
 # This is only needed to debug QML in Qt Creator.
 # target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -29,6 +30,7 @@ qt6_add_resources(${PROJECT_NAME} "traceui-resources"
     fonts/Hack-Bold.ttf
     fonts/Hack-Italic.ttf
     fonts/Hack-BoldItalic.ttf
+    textures/earth_landmask.png
 
 )
 
@@ -38,6 +40,7 @@ qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
   PREFIX "/"
   FILES
     shaders/dotgrid.frag
+    shaders/globe.frag
 )
 
 configure_file(config.h.in config.h)
