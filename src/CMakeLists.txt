@@ -5,14 +5,18 @@ qt_add_executable(${PROJECT_NAME}
   main.cpp
 )
 
+set_source_files_properties(Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
 qt_add_qml_module(${PROJECT_NAME}
   URI ${PROJECT_NAME}
   VERSION ${CMAKE_PROJECT_VERSION}
   QML_FILES
+    Style.qml
     Main.qml
     ClockPanel.qml
     GlobePanel.qml
 )
+
 # This is only needed to debug QML in Qt Creator.
 # target_compile_definitions(${PROJECT_NAME} PRIVATE
 #   "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>"

@@ -1,11 +1,12 @@
 import QtQuick
+import TraceUI
 
 Window {
     id: root
 
     flags: Qt.FramelessWindowHint
     visibility: Window.FullScreen
-    color: "#0d0b0e"
+    color: Style.backgroundColor
     visible: true
 
     FontLoader {

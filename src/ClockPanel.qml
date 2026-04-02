@@ -1,8 +1,9 @@
 import QtQuick
+import TraceUI
 
 Text {
     text: Qt.formatTime(new Date(), "hh:mm:ss")
-    color: "#e8dfc0"
+    color: Style.foregroundColor
     font.family: "Hack"
     font.pixelSize: 32
     font.letterSpacing: 3

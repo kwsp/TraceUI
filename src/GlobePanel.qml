@@ -1,10 +1,11 @@
 import QtQuick
+import TraceUI
 
 Item {
     id: globePanel
 
     property real globeRadius: 1.5
-    property color baseColor: "#e8dfc0"
+    property color baseColor: Style.foregroundColor
 
     Image {
         id: landMaskImage
