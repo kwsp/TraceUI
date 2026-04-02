@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick ShaderTools)
 qt_standard_project_setup(REQUIRES 6.5)
 
 qt_add_executable(${PROJECT_NAME}
@@ -15,6 +15,14 @@ qt_add_qml_module(${PROJECT_NAME}
 # target_compile_definitions(${PROJECT_NAME} PRIVATE
 #   "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>"
 # )
+
+qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
+  BATCHABLE
+  PRECOMPILE
+  PREFIX "/"
+  FILES
+    shaders/dotgrid.frag
+)
 
 configure_file(config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
