@@ -9,7 +9,7 @@
 static constexpr int kUint8Max = std::numeric_limits<uint8_t>::max();
 
 NetworkHistoryProvider::NetworkHistoryProvider(QQuickItem *parent)
-    : QQuickItem(parent) {
+    : QQuickItem(parent), m_img(kSize, 1, QImage::Format_RGBA8888) {
   setFlag(ItemHasContents, true);
 }
 
@@ -60,23 +60,22 @@ NetworkHistoryProvider::updatePaintNode(QSGNode *oldNode,
   if (!m_dirty)
     return oldNode;
 
-  QImage img(kSize, 1, QImage::Format_RGBA8888);
   {
     std::lock_guard lock(m_mutex);
     for (int i = 0; i < kSize; i++) {
       int idx = (m_writeIndex + i) % kSize;
       float dlNorm = std::clamp(m_dlHistory.at(idx) / m_graphMax, 0.0F, 1.0F);
       float ulNorm = std::clamp(m_ulHistory.at(idx) / m_graphMax, 0.0F, 1.0F);
-      img.setPixel(i, 0,
-                   qRgba(static_cast<int>(dlNorm * kUint8Max),
-                         static_cast<int>(ulNorm * kUint8Max), 0, kUint8Max));
+      m_img.setPixel(i, 0,
+                     qRgba(static_cast<int>(dlNorm * kUint8Max),
+                           static_cast<int>(ulNorm * kUint8Max), 0, kUint8Max));
     }
     m_dirty = false;
   }
 
   delete m_provider->m_texture;
   m_provider->m_texture =
-      window()->createTextureFromImage(img, QQuickWindow::TextureIsOpaque);
+      window()->createTextureFromImage(m_img, QQuickWindow::TextureIsOpaque);
   emit m_provider->textureChanged();
 
   return oldNode; // this item has no visual node of its own

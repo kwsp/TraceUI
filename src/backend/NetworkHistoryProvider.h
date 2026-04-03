@@ -64,5 +64,6 @@ private:
   float m_graphMax{kMinMaxReference};
   float m_graphScale{1.0F};
   bool m_dirty{false};
+  QImage m_img;
   std::mutex m_mutex;
 };
