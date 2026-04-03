@@ -3,26 +3,29 @@
 #include "backend/ProcessWatcher.h"
 #include <QElapsedTimer>
 #include <QHash>
+#include <QList>
 #include <QTimer>
 #include <mach/mach_time.h>
 
 class ProcessWatcherMacOS : public ProcessWatcher {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit ProcessWatcherMacOS(QObject* parent = nullptr);
-    ~ProcessWatcherMacOS() override = default;
+  explicit ProcessWatcherMacOS(QObject *parent = nullptr);
+  ~ProcessWatcherMacOS() override = default;
 
-    void update() override;
+  void update() override;
 
 private slots:
-    void performUpdate();
+  void performUpdate();
+  void sortAndPublish();
 
 private:
-    QTimer    m_timer;
-    QElapsedTimer m_pollTimer;
-    QHash<pid_t, uint64_t> m_cpuTimes;
-    QHash<pid_t, QString>  m_nameCache;
-    mach_timebase_info_data_t m_timebase{};
-    int m_coreCount = 1;
+  QTimer m_timer;
+  QElapsedTimer m_pollTimer;
+  QHash<pid_t, uint64_t> m_cpuTimes;
+  QHash<pid_t, QString> m_nameCache;
+  QList<ProcessEntry> m_allEntries;
+  mach_timebase_info_data_t m_timebase{};
+  int m_coreCount = 1;
 };

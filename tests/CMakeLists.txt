@@ -10,6 +10,7 @@ add_library(TraceUIBackend STATIC
     ../src/backend/SystemMonitor.cpp
     ../src/backend/macos/SystemMonitorMacOS.cpp
     ../src/backend/ProcessWatcher.cpp
+    ../src/backend/ProcessListModel.cpp
     ../src/backend/macos/ProcessWatcherMacOS.cpp
     ../src/backend/NetworkMonitor.cpp
     ../src/backend/macos/NetworkMonitorMacOS.cpp

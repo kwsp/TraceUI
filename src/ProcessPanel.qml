@@ -30,14 +30,30 @@ Item {
             font.family: Style.fontData
         }
 
-        Text {
+        Row {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.rightMargin: 10
-            text: "CPU% | RAM MB"
-            color: Style.textLabel
-            font.pixelSize: 10
-            font.family: Style.fontData
+            spacing: 6
+
+            Text {
+                text: "CPU%"
+                color: processWatcher.sortByCpu ? Style.accentGold : Style.textLabel
+                font.pixelSize: 10
+                font.family: Style.fontData
+            }
+            Text {
+                text: "|"
+                color: Style.textDim
+                font.pixelSize: 10
+                font.family: Style.fontData
+            }
+            Text {
+                text: "RAM MB"
+                color: processWatcher.sortByCpu ? Style.textLabel : Style.accentGold
+                font.pixelSize: 10
+                font.family: Style.fontData
+            }
         }
 
         Rectangle {
@@ -45,6 +61,15 @@ Item {
             width: parent.width
             height: 1
             color: Style.borderDefault
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        propagateComposedEvents: true
+        onClicked: (mouse) => {
+            processWatcher.toggleSort()
+            mouse.accepted = false
         }
     }
 
