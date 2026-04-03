@@ -12,14 +12,14 @@ Item {
         border.color: Style.borderDefault
         border.width: 1
     }
-    
+
     Item {
         id: header
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         height: 30
-        
+
         Text {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
@@ -29,17 +29,17 @@ Item {
             font.pixelSize: 12
             font.family: Style.fontData
         }
-        
+
         Text {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.rightMargin: 10
-            text: "PID | NAME | RAM MB"
+            text: "CPU% | RAM MB"
             color: Style.textLabel
             font.pixelSize: 10
             font.family: Style.fontData
         }
-        
+
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
@@ -47,7 +47,7 @@ Item {
             color: Style.borderDefault
         }
     }
-    
+
     ListView {
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
@@ -55,26 +55,32 @@ Item {
         anchors.right: parent.right
         anchors.margins: 10
         clip: true
-        
+
         model: processWatcher.processes
-        
+
         delegate: Item {
+            id: delegateRoot
+            required property int pid
+            required property string name
+            required property int cpuPct
+            required property int ramMB
+
             width: ListView.view.width
             height: 20
-            
+
             Text {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                text: modelData.pid.toString().padEnd(6, " ") + " " + modelData.name
+                text: delegateRoot.pid.toString().padEnd(6, " ") + " " + delegateRoot.name
                 color: Style.accentSilver
                 font.pixelSize: 12
                 font.family: Style.fontData
             }
-            
+
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: modelData.ramMB.toFixed(1) + " MB"
+                text: delegateRoot.cpuPct + "%  " + delegateRoot.ramMB + " MB"
                 color: Style.textPrimary
                 font.pixelSize: 12
                 font.family: Style.fontData

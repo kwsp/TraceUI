@@ -2,5 +2,10 @@
 
 ProcessWatcher::ProcessWatcher(QObject* parent) : QObject(parent) {}
 
-[[nodiscard]] QVariantList ProcessWatcher::processes() const { return m_processes; }
-[[nodiscard]] QVariantList ProcessWatcher::watchedServices() const { return m_watchedServices; }
+ProcessListModel* ProcessWatcher::processes() { return &m_processModel; }
+
+QVariantList ProcessWatcher::watchedServices() const { return m_watchedServices; }
+
+void ProcessWatcher::updateProcesses(QList<ProcessEntry> incoming) {
+    m_processModel.updateData(std::move(incoming));
+}

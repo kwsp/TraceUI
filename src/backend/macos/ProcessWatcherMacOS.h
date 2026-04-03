@@ -1,7 +1,10 @@
 #pragma once
 
 #include "backend/ProcessWatcher.h"
+#include <QElapsedTimer>
+#include <QHash>
 #include <QTimer>
+#include <mach/mach_time.h>
 
 class ProcessWatcherMacOS : public ProcessWatcher {
     Q_OBJECT
@@ -16,5 +19,10 @@ private slots:
     void performUpdate();
 
 private:
-    QTimer m_timer;
+    QTimer    m_timer;
+    QElapsedTimer m_pollTimer;
+    QHash<pid_t, uint64_t> m_cpuTimes;
+    QHash<pid_t, QString>  m_nameCache;
+    mach_timebase_info_data_t m_timebase{};
+    int m_coreCount = 1;
 };

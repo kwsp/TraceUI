@@ -4,7 +4,7 @@ import QtQuick
 QtObject {
     // Neo-Kitsch palette based on Architecture.md
     readonly property color background:       "#0d0b0e"
-    readonly property color panelBg:          Qt.rgba(0.10, 0.08, 0.12, 0.88)
+    readonly property color panelBg:          "transparent"
     readonly property color borderDefault:    "#8a7a50"
     readonly property color borderAlert:      "#c9a84c"
     readonly property color borderError:      "#8a3030"

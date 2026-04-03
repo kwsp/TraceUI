@@ -6,6 +6,7 @@ qt_add_executable(${PROJECT_NAME}
   backend/SystemMonitor.cpp
   backend/ProcessWatcher.cpp
   backend/NetworkMonitor.cpp
+  backend/ProcessListModel.cpp
 )
 
 if(APPLE)
@@ -39,15 +40,8 @@ qt_add_qml_module(${PROJECT_NAME}
 qt6_add_resources(${PROJECT_NAME} "traceui-resources"
   PREFIX "/"
   FILES
-    fonts/BlenderPro-Bold.ttf
     fonts/BlenderPro-Book.ttf
-    fonts/BlenderPro-Heavy.ttf
-    fonts/BlenderPro-Medium.ttf
-    fonts/BlenderPro-Thin.ttf
     fonts/Hack-Regular.ttf
-    fonts/Hack-Bold.ttf
-    fonts/Hack-Italic.ttf
-    fonts/Hack-BoldItalic.ttf
     textures/earth_landmask.png
 
 )
