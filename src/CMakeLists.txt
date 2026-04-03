@@ -42,8 +42,8 @@ qt6_add_resources(${PROJECT_NAME} "traceui-resources"
   FILES
     fonts/BlenderPro-Book.ttf
     fonts/Hack-Regular.ttf
-    textures/earth_landmask.png
 
+    textures/earth_landmask.png
 )
 
 qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"

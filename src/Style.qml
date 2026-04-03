@@ -17,6 +17,6 @@ QtObject {
     readonly property color foregroundColor:  "#e8dfc0"
     readonly property color backgroundColor:  "#0d0b0e"
 
-    readonly property string fontDisplay: "Blender Pro Book"
+    readonly property string fontDisplay: "Blender Pro"
     readonly property string fontData:    "Hack"
 }

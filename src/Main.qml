@@ -10,31 +10,10 @@ Window {
     visible: true
 
     FontLoader {
-        source: "qrc:/fonts/BlenderPro-Bold.ttf"
-    }
-    FontLoader {
         source: "qrc:/fonts/BlenderPro-Book.ttf"
     }
     FontLoader {
-        source: "qrc:/fonts/BlenderPro-Heavy.ttf"
-    }
-    FontLoader {
-        source: "qrc:/fonts/BlenderPro-Medium.ttf"
-    }
-    FontLoader {
-        source: "qrc:/fonts/BlenderPro-Thin.ttf"
-    }
-    FontLoader {
         source: "qrc:/fonts/Hack-Regular.ttf"
-    }
-    FontLoader {
-        source: "qrc:/fonts/Hack-Bold.ttf"
-    }
-    FontLoader {
-        source: "qrc:/fonts/Hack-Italic.ttf"
-    }
-    FontLoader {
-        source: "qrc:/fonts/Hack-BoldItalic.ttf"
     }
 
     // Dot grid background
