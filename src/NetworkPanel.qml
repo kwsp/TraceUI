@@ -113,6 +113,7 @@ Item {
             anchors.topMargin: 5
 
             property var networkHistory: histProvider
+            property real graphScale: histProvider.graphScale
 
             fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
         }

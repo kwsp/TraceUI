@@ -6,6 +6,7 @@ layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {
     mat4 qt_Matrix;
     float qt_Opacity;
+    float graphScale;
 };
 
 layout(binding = 1) uniform sampler2D networkHistory;
@@ -30,16 +31,16 @@ void main() {
     float dlVal = hist.r;
     float ulVal = hist.g;
 
-    // DL curve: grows upward from center (0.5 → 0.95)
-    float dlY = 0.5 + dlVal * 0.45;
+    // DL curve: grows upward from center (0.5 → 0.05)
+    float dlY = 0.5 - dlVal * graphScale * 0.45;
     float distDL = abs(uv.y - dlY);
     float beamDL = smoothstep(0.01, 0.0, distDL);
     float glowDL = 0.003 / max(distDL, 0.001);
     float dlFill = step(0.5, uv.y) * step(uv.y, dlY);
     vec3 dlCol = vec3(0.0, 0.9, 1.0) * (beamDL + glowDL) + vec3(0.0, 0.3, 0.4) * dlFill * 0.25;
 
-    // UL curve: grows downward from center (0.5 → 0.05)
-    float ulY = 0.5 - ulVal * 0.45;
+    // UL curve: grows downward from center (0.5 → 0.95)
+    float ulY = 0.5 + ulVal * graphScale * 0.45;
     float distUL = abs(uv.y - ulY);
     float beamUL = smoothstep(0.01, 0.0, distUL);
     float glowUL = 0.003 / max(distUL, 0.001);
