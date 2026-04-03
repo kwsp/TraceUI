@@ -9,10 +9,13 @@ class SystemMonitorMacOS : public SystemMonitor {
 
 public:
   explicit SystemMonitorMacOS(QObject *parent = nullptr);
+  SystemMonitorMacOS(const SystemMonitorMacOS &) = delete;
+  SystemMonitorMacOS &operator=(const SystemMonitorMacOS &) = delete;
+  SystemMonitorMacOS(SystemMonitorMacOS &&) = delete;
+  SystemMonitorMacOS &operator=(SystemMonitorMacOS &&) = delete;
   ~SystemMonitorMacOS() override;
 
   void update() override;
-  QString cpuName() const override { return m_cpuName; }
 
 private slots:
   void performUpdate();
@@ -23,7 +26,6 @@ private:
   void updateLoadAverage();
   void updateTemperature();
 
-  QString m_cpuName;
   QTimer m_timer;
   processor_info_array_t m_prevCpuInfo = nullptr;
   mach_msg_type_number_t m_numPrevCpuInfo = 0;

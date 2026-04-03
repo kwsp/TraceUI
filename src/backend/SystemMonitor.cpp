@@ -8,3 +8,4 @@ SystemMonitor::SystemMonitor(QObject* parent) : QObject(parent) {}
 [[nodiscard]] int SystemMonitor::swapUsedMB() const { return m_swapUsedMB; }
 [[nodiscard]] double SystemMonitor::cpuTempCelsius() const { return m_cpuTempCelsius; }
 [[nodiscard]] double SystemMonitor::loadAverage1m() const { return m_loadAverage1m; }
+[[nodiscard]] QString SystemMonitor::cpuName() const { return m_cpuName; }

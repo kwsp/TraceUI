@@ -18,6 +18,13 @@ SystemMonitorMacOS::SystemMonitorMacOS(QObject *parent)
     m_cpuName = "Unknown CPU";
   }
 
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+  uint64_t memSizeBytes = 0;
+  size_t memSizeBytesLen = sizeof(memSizeBytes);
+  sysctl(mib, 2U, &memSizeBytes, &memSizeBytesLen, NULL, 0);
+  m_ramTotalMB = static_cast<int>(memSizeBytes / 1024 / 1024); // Convert bytes to MB
+
   connect(&m_timer, &QTimer::timeout, this, &SystemMonitorMacOS::performUpdate);
   m_timer.start(1000); // 1 second polling as per architecture docs
 }
@@ -63,7 +70,8 @@ void SystemMonitorMacOS::updateCpuUsage() {
         integer_t total =
             inUse + (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE] -
                      m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE]);
-        m_cpuUsagePercent[i] = (total == 0) ? 0.0 : static_cast<double>(inUse) / total * 100.0;
+        m_cpuUsagePercent[i] =
+            (total == 0) ? 0.0 : static_cast<double>(inUse) / total * 100.0;
       }
 
       size_t prevCpuInfoSize = sizeof(integer_t) * m_numPrevCpuInfo;
@@ -93,7 +101,6 @@ void SystemMonitorMacOS::updateMemoryUsage() {
         (int64_t)page_size;
 
     m_ramUsedMB = static_cast<int>(used_memory / 1024 / 1024);
-    m_ramTotalMB = static_cast<int>((used_memory + free_memory) / 1024 / 1024);
   }
 }
 

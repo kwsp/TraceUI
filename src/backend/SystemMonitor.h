@@ -18,6 +18,10 @@ class SystemMonitor : public QObject {
 
 public:
     explicit SystemMonitor(QObject* parent = nullptr);
+    SystemMonitor(const SystemMonitor &) = delete;
+    SystemMonitor &operator=(const SystemMonitor &) = delete;
+    SystemMonitor(SystemMonitor &&) = delete;
+    SystemMonitor &operator=(SystemMonitor &&) = delete;
     virtual ~SystemMonitor() = default;
 
     [[nodiscard]] QList<double> cpuUsagePercent() const;
@@ -26,7 +30,7 @@ public:
     [[nodiscard]] int swapUsedMB() const;
     [[nodiscard]] double cpuTempCelsius() const;
     [[nodiscard]] double loadAverage1m() const;
-    [[nodiscard]] virtual QString cpuName() const = 0;
+    [[nodiscard]] QString cpuName() const;
 
     virtual void update() = 0;
 
@@ -40,4 +44,5 @@ protected:
     int m_swapUsedMB = 0;
     double m_cpuTempCelsius = 0.0;
     double m_loadAverage1m = 0.0;
+    QString m_cpuName;
 };
