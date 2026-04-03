@@ -15,6 +15,7 @@ class SystemMonitor : public QObject {
     Q_PROPERTY(double cpuTempCelsius READ cpuTempCelsius NOTIFY dataUpdated)
     Q_PROPERTY(double loadAverage1m READ loadAverage1m NOTIFY dataUpdated)
     Q_PROPERTY(QString cpuName READ cpuName CONSTANT)
+    Q_PROPERTY(QString uptime READ uptime NOTIFY dataUpdated)
 
 public:
     explicit SystemMonitor(QObject* parent = nullptr);
@@ -31,6 +32,7 @@ public:
     [[nodiscard]] double cpuTempCelsius() const;
     [[nodiscard]] double loadAverage1m() const;
     [[nodiscard]] QString cpuName() const;
+    [[nodiscard]] QString uptime() const;
 
     virtual void update() = 0;
 
@@ -45,4 +47,5 @@ protected:
     double m_cpuTempCelsius = 0.0;
     double m_loadAverage1m = 0.0;
     QString m_cpuName;
+    QString m_uptime;
 };

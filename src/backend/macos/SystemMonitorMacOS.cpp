@@ -1,6 +1,7 @@
 #include "SystemMonitorMacOS.h"
 #include <mach/mach_host.h>
 #include <sys/sysctl.h>
+#include <sys/time.h>
 
 SystemMonitorMacOS::SystemMonitorMacOS(QObject *parent)
     : SystemMonitor(parent) {
@@ -23,7 +24,8 @@ SystemMonitorMacOS::SystemMonitorMacOS(QObject *parent)
   uint64_t memSizeBytes = 0;
   size_t memSizeBytesLen = sizeof(memSizeBytes);
   sysctl(mib, 2U, &memSizeBytes, &memSizeBytesLen, NULL, 0);
-  m_ramTotalMB = static_cast<int>(memSizeBytes / 1024 / 1024); // Convert bytes to MB
+  m_ramTotalMB =
+      static_cast<int>(memSizeBytes / 1024 / 1024); // Convert bytes to MB
 
   connect(&m_timer, &QTimer::timeout, this, &SystemMonitorMacOS::performUpdate);
   m_timer.start(1000); // 1 second polling as per architecture docs
@@ -44,6 +46,7 @@ void SystemMonitorMacOS::performUpdate() {
   updateMemoryUsage();
   updateLoadAverage();
   updateTemperature();
+  updateUptime();
   emit dataUpdated();
 }
 
@@ -115,4 +118,21 @@ void SystemMonitorMacOS::updateLoadAverage() {
 void SystemMonitorMacOS::updateTemperature() {
   // Stubbed until IOKit implementation
   m_cpuTempCelsius = 45.0;
+}
+
+void SystemMonitorMacOS::updateUptime() {
+  int mib[2] = {CTL_KERN, KERN_BOOTTIME};
+  struct timeval boottime;
+  size_t size = sizeof(boottime);
+  if (sysctl(mib, 2, &boottime, &size, NULL, 0) == 0) {
+    time_t now = time(NULL);
+    time_t uptimeSecs = now - boottime.tv_sec;
+    int days = static_cast<int>(uptimeSecs / 86400);
+    int hours = static_cast<int>((uptimeSecs % 86400) / 3600);
+    int mins = static_cast<int>((uptimeSecs % 3600) / 60);
+    m_uptime = QString("%1:%2:%3")
+                   .arg(days)
+                   .arg(hours, 2, 10, QChar('0'))
+                   .arg(mins, 2, 10, QChar('0'));
+  }
 }

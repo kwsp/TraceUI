@@ -25,6 +25,7 @@ private:
   void updateMemoryUsage();
   void updateLoadAverage();
   void updateTemperature();
+  void updateUptime();
 
   QTimer m_timer;
   processor_info_array_t m_prevCpuInfo = nullptr;

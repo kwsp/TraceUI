@@ -114,7 +114,7 @@ Item {
                     font.family: Style.fontData
                 }
                 Text {
-                    text: "SYS_UP"
+                    text: SystemMonitor.uptime
                     color: Style.textPrimary
                     font.pixelSize: 14
                     font.family: Style.fontData
