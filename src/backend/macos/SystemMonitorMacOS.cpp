@@ -27,6 +27,15 @@ SystemMonitorMacOS::SystemMonitorMacOS(QObject *parent)
   m_ramTotalMB =
       static_cast<int>(memSizeBytes / 1024 / 1024); // Convert bytes to MB
 
+  // Fetch boot time once — uptime is derived from this without repeated syscalls
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_BOOTTIME;
+  struct timeval boottime;
+  size_t boottimeLen = sizeof(boottime);
+  if (sysctl(mib, 2U, &boottime, &boottimeLen, NULL, 0) == 0) {
+    m_bootTimeSecs = boottime.tv_sec;
+  }
+
   connect(&m_timer, &QTimer::timeout, this, &SystemMonitorMacOS::performUpdate);
   m_timer.start(1000); // 1 second polling as per architecture docs
 }
@@ -121,18 +130,14 @@ void SystemMonitorMacOS::updateTemperature() {
 }
 
 void SystemMonitorMacOS::updateUptime() {
-  int mib[2] = {CTL_KERN, KERN_BOOTTIME};
-  struct timeval boottime;
-  size_t size = sizeof(boottime);
-  if (sysctl(mib, 2, &boottime, &size, NULL, 0) == 0) {
-    time_t now = time(NULL);
-    time_t uptimeSecs = now - boottime.tv_sec;
-    int days = static_cast<int>(uptimeSecs / 86400);
-    int hours = static_cast<int>((uptimeSecs % 86400) / 3600);
-    int mins = static_cast<int>((uptimeSecs % 3600) / 60);
-    m_uptime = QString("%1:%2:%3")
-                   .arg(days)
-                   .arg(hours, 2, 10, QChar('0'))
-                   .arg(mins, 2, 10, QChar('0'));
-  }
+  if (m_bootTimeSecs == 0)
+    return;
+  time_t uptimeSecs = time(NULL) - m_bootTimeSecs;
+  int days = static_cast<int>(uptimeSecs / 86400);
+  int hours = static_cast<int>((uptimeSecs % 86400) / 3600);
+  int mins = static_cast<int>((uptimeSecs % 3600) / 60);
+  m_uptime = QString("%1:%2:%3")
+                 .arg(days)
+                 .arg(hours, 2, 10, QChar('0'))
+                 .arg(mins, 2, 10, QChar('0'));
 }

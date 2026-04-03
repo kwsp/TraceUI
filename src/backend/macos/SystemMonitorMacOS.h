@@ -31,4 +31,5 @@ private:
   processor_info_array_t m_prevCpuInfo = nullptr;
   mach_msg_type_number_t m_numPrevCpuInfo = 0;
   unsigned int m_numCPUs = 0;
+  time_t m_bootTimeSecs = 0;
 };
