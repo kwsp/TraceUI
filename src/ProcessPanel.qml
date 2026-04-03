@@ -67,9 +67,9 @@ Item {
     MouseArea {
         anchors.fill: parent
         propagateComposedEvents: true
-        onClicked: (mouse) => {
-            processWatcher.toggleSort()
-            mouse.accepted = false
+        onClicked: mouse => {
+            processWatcher.toggleSort();
+            mouse.accepted = false;
         }
     }
 
