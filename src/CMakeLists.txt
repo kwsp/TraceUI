@@ -3,20 +3,7 @@ qt_standard_project_setup(REQUIRES 6.5)
 
 qt_add_executable(${PROJECT_NAME}
   main.cpp
-  backend/SystemMonitor.cpp
-  backend/ProcessWatcher.cpp
-  backend/NetworkMonitor.cpp
-  backend/ProcessListModel.cpp
 )
-
-if(APPLE)
-  target_sources(${PROJECT_NAME} PRIVATE 
-    backend/macos/SystemMonitorMacOS.cpp
-    backend/macos/ProcessWatcherMacOS.cpp
-    backend/macos/NetworkMonitorMacOS.cpp
-  )
-  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation")
-endif()
 
 set_source_files_properties(Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
@@ -32,10 +19,32 @@ qt_add_qml_module(${PROJECT_NAME}
     GlobePanel.qml
   SOURCES
     backend/SystemMonitor.h
+    backend/SystemMonitor.cpp
     backend/ProcessWatcher.h
+    backend/ProcessWatcher.cpp
     backend/NetworkMonitor.h
+    backend/NetworkMonitor.cpp
+    backend/NetworkHistoryProvider.h
+    backend/NetworkHistoryProvider.cpp
     backend/ProcessListModel.h
+    backend/ProcessListModel.cpp
 )
+
+if(APPLE)
+  target_sources(${PROJECT_NAME} PRIVATE
+    backend/macos/SystemMonitorMacOS.h
+    backend/macos/SystemMonitorMacOS.cpp
+    backend/macos/ProcessWatcherMacOS.h
+    backend/macos/ProcessWatcherMacOS.cpp
+    backend/macos/NetworkMonitorMacOS.h
+    backend/macos/NetworkMonitorMacOS.cpp
+  )
+endif()
+
+
+if(APPLE)
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation")
+endif()
 
 # This is only needed to debug QML in Qt Creator.
 # target_compile_definitions(${PROJECT_NAME} PRIVATE

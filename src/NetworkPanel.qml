@@ -6,20 +6,36 @@ Item {
     width: 400
     height: 200
 
+    NetworkHistoryProvider {
+        id: histProvider
+        visible: false
+        width: 1
+        height: 1
+    }
+
+    Connections {
+        target: NetworkMonitor
+        function onDataUpdated() {
+            histProvider.onDataUpdated(
+                NetworkMonitor.downloadBytesPerSec,
+                NetworkMonitor.uploadBytesPerSec)
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.panelBg
         border.color: Style.borderDefault
         border.width: 1
     }
-    
+
     Item {
         id: header
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         height: 30
-        
+
         Text {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
@@ -29,13 +45,13 @@ Item {
             font.pixelSize: 12
             font.family: Style.fontData
         }
-        
+
         Row {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.rightMargin: 10
             spacing: 20
-            
+
             Text {
                 text: "IFACE " + NetworkMonitor.mainInterface
                 color: Style.textDim
@@ -49,7 +65,7 @@ Item {
                 font.family: Style.fontData
             }
         }
-        
+
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
@@ -57,21 +73,21 @@ Item {
             color: Style.borderDefault
         }
     }
-    
+
     Item {
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 10
-        
+
         Item {
             id: labelNetRow
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
             height: 20
-            
+
             Text {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
@@ -89,7 +105,7 @@ Item {
                 font.family: Style.fontData
             }
         }
-        
+
         ShaderEffect {
             id: netShader
             anchors.top: labelNetRow.bottom
@@ -97,13 +113,12 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.topMargin: 5
-            
-            property real dlSignal: Math.min(NetworkMonitor.downloadBytesPerSec / 102400.0, 1.0)
-            property real ulSignal: Math.min(NetworkMonitor.uploadBytesPerSec / 102400.0, 1.0)
+
+            property var networkHistory: histProvider
             property real time
-            
+
             NumberAnimation on time { loops: Animation.Infinite; from: 0; to: 10000.0; duration: 10000000 }
-            
+
             fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
         }
     }
