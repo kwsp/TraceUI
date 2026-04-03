@@ -38,8 +38,8 @@ Window {
         id: globePanel
         anchors.left: sysPanel.right
         anchors.top: sysPanel.top
-        width: 400
-        height: 400
+        width: 300
+        height: 300
         anchors.margins: 24
     }
 

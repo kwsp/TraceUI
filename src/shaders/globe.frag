@@ -22,8 +22,8 @@ layout(std140, binding = 0) uniform buf {
 #define TILE_FRACTION (1.0 - GAP_WIDTH)
 #define LAND_THRESHOLD 0.5
 #define VIEW_TILT -0.5 // radians. negative = look down at northern hemisphere
-#define FOG_START 0.0  // dot product between surface normal and camera dir
-#define FOG_END -0.6
+#define FOG_START -0.3  // dot product between surface normal and camera dir
+#define FOG_END -0.8
 
 // ─── Utility ───────────────────────────────────────────────────────────────
 
