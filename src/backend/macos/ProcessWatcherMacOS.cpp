@@ -51,16 +51,17 @@ void ProcessWatcherMacOS::performUpdate() {
   const auto elapsedNs = static_cast<uint64_t>(m_pollTimer.nsecsElapsed());
   m_pollTimer.restart();
 
+  // Request all processes from sysctl (BSD API)
+  // https://man.openbsd.org/sysctl.2
   int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
   size_t size = 0;
   if (sysctl(mib, 4, nullptr, &size, nullptr, 0) != 0 || size == 0)
     return;
 
-  std::vector<kinfo_proc> procs(size / sizeof(kinfo_proc) + 4);
+  const size_t procCount = size / sizeof(kinfo_proc);
+  std::vector<kinfo_proc> procs(procCount + 4);
   if (sysctl(mib, 4, procs.data(), &size, nullptr, 0) != 0)
     return;
-
-  const size_t procCount = size / sizeof(kinfo_proc);
 
   QHash<pid_t, uint64_t> newCpuTimes;
   newCpuTimes.reserve(procCount);
