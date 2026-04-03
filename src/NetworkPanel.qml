@@ -16,9 +16,7 @@ Item {
     Connections {
         target: NetworkMonitor
         function onDataUpdated() {
-            histProvider.onDataUpdated(
-                NetworkMonitor.downloadBytesPerSec,
-                NetworkMonitor.uploadBytesPerSec)
+            histProvider.onDataUpdated(NetworkMonitor.downloadBytesPerSec, NetworkMonitor.uploadBytesPerSec);
         }
     }
 
@@ -115,9 +113,6 @@ Item {
             anchors.topMargin: 5
 
             property var networkHistory: histProvider
-            property real time
-
-            NumberAnimation on time { loops: Animation.Infinite; from: 0; to: 10000.0; duration: 10000000 }
 
             fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
         }

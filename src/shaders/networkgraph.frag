@@ -6,7 +6,6 @@ layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {
     mat4 qt_Matrix;
     float qt_Opacity;
-    float time;
 };
 
 layout(binding = 1) uniform sampler2D networkHistory;
@@ -16,7 +15,8 @@ void main() {
 
     // Scrolling background grid
     float moveSpeed = 0.1;
-    float timeShift = time * moveSpeed;
+    // float timeShift = time * moveSpeed;
+    float timeShift = 0;
     vec2 gridUV = fract(vec2((uv.x + timeShift) * 20.0, uv.y * 10.0));
     float gridLine = step(gridUV.x, 0.05) + step(gridUV.y, 0.05);
     vec3 gridCol = vec3(0.1, 0.1, 0.1) * min(gridLine, 1.0);
