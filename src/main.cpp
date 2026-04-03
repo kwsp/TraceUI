@@ -1,7 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
-#include <QQmlContext>
+#include <QtQml/qqml.h>
 
 #ifdef Q_OS_MACOS
 #include "backend/macos/SystemMonitorMacOS.h"
@@ -19,16 +19,13 @@ int main(int argc, char *argv[]) {
     SystemMonitorMacOS systemMonitor;
     ProcessWatcherMacOS processWatcher;
     NetworkMonitorMacOS networkMonitor;
+
+    qmlRegisterSingletonInstance<SystemMonitor> ("TraceUI", 0, 1, "SystemMonitor",  &systemMonitor);
+    qmlRegisterSingletonInstance<ProcessWatcher>("TraceUI", 0, 1, "ProcessWatcher", &processWatcher);
+    qmlRegisterSingletonInstance<NetworkMonitor>("TraceUI", 0, 1, "NetworkMonitor", &networkMonitor);
 #endif
 
     QQmlApplicationEngine engine;
-
-#ifdef Q_OS_MACOS
-    engine.rootContext()->setContextProperty("systemMonitor", &systemMonitor);
-    engine.rootContext()->setContextProperty("processWatcher", &processWatcher);
-    engine.rootContext()->setContextProperty("networkMonitor", &networkMonitor);
-#endif
-
     engine.loadFromModule(APP_MODULE_NAME, "Main");
 
     return QGuiApplication::exec();

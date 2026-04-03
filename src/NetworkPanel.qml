@@ -37,14 +37,14 @@ Item {
             spacing: 20
             
             Text {
-                text: "IFACE " + networkMonitor.mainInterface
+                text: "IFACE " + NetworkMonitor.mainInterface
                 color: Style.textDim
                 font.pixelSize: 10
                 font.family: Style.fontData
             }
             Text {
-                text: networkMonitor.vpnActive ? "VPN SECURE" : "NET ONLINE"
-                color: networkMonitor.vpnActive ? Style.accentGold : Style.textPrimary
+                text: NetworkMonitor.vpnActive ? "VPN SECURE" : "NET ONLINE"
+                color: NetworkMonitor.vpnActive ? Style.accentGold : Style.textPrimary
                 font.pixelSize: 10
                 font.family: Style.fontData
             }
@@ -83,7 +83,7 @@ Item {
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: "DL: " + (networkMonitor.downloadBytesPerSec / 1024.0).toFixed(1) + " KB/s  UL: " + (networkMonitor.uploadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
+                text: "DL: " + (NetworkMonitor.downloadBytesPerSec / 1024.0).toFixed(1) + " KB/s  UL: " + (NetworkMonitor.uploadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
                 color: Style.textLabel
                 font.pixelSize: 10
                 font.family: Style.fontData
@@ -98,8 +98,8 @@ Item {
             anchors.right: parent.right
             anchors.topMargin: 5
             
-            property real dlSignal: Math.min(networkMonitor.downloadBytesPerSec / 102400.0, 1.0)
-            property real ulSignal: Math.min(networkMonitor.uploadBytesPerSec / 102400.0, 1.0)
+            property real dlSignal: Math.min(NetworkMonitor.downloadBytesPerSec / 102400.0, 1.0)
+            property real ulSignal: Math.min(NetworkMonitor.uploadBytesPerSec / 102400.0, 1.0)
             property real time
             
             NumberAnimation on time { loops: Animation.Infinite; from: 0; to: 10000.0; duration: 10000000 }

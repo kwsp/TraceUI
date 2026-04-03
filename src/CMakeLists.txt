@@ -30,6 +30,11 @@ qt_add_qml_module(${PROJECT_NAME}
     ProcessPanel.qml
     NetworkPanel.qml
     GlobePanel.qml
+  SOURCES
+    backend/SystemMonitor.h
+    backend/ProcessWatcher.h
+    backend/NetworkMonitor.h
+    backend/ProcessListModel.h
 )
 
 # This is only needed to debug QML in Qt Creator.
@@ -59,7 +64,10 @@ qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
 )
 
 configure_file(config.h.in config.h)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/backend  # for qml to register C++ types
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt6::Core

@@ -16,7 +16,7 @@ add_library(TraceUIBackend STATIC
     ../src/backend/macos/NetworkMonitorMacOS.cpp
 )
 target_include_directories(TraceUIBackend PUBLIC ../src)
-target_link_libraries(TraceUIBackend PRIVATE Qt6::Core)
+target_link_libraries(TraceUIBackend PRIVATE Qt6::Core Qt6::Qml)
 if(APPLE)
     target_link_libraries(TraceUIBackend PRIVATE "-framework CoreFoundation")
 endif()

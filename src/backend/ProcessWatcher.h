@@ -2,10 +2,13 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QtQml/qqmlregistration.h>
 #include "ProcessListModel.h"
 
 class ProcessWatcher : public QObject {
     Q_OBJECT
+    QML_ELEMENT
+    QML_UNCREATABLE("ProcessWatcher is provided by the backend")
     Q_PROPERTY(ProcessListModel* processes READ processes CONSTANT)
     Q_PROPERTY(QVariantList watchedServices READ watchedServices NOTIFY dataUpdated)
     Q_PROPERTY(bool sortByCpu READ sortByCpu NOTIFY sortByCpuChanged)

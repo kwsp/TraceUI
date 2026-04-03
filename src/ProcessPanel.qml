@@ -38,7 +38,7 @@ Item {
 
             Text {
                 text: "CPU%"
-                color: processWatcher.sortByCpu ? Style.accentGold : Style.textLabel
+                color: ProcessWatcher.sortByCpu ? Style.accentGold : Style.textLabel
                 font.pixelSize: 10
                 font.family: Style.fontData
             }
@@ -50,7 +50,7 @@ Item {
             }
             Text {
                 text: "RAM MB"
-                color: processWatcher.sortByCpu ? Style.textLabel : Style.accentGold
+                color: ProcessWatcher.sortByCpu ? Style.textLabel : Style.accentGold
                 font.pixelSize: 10
                 font.family: Style.fontData
             }
@@ -68,7 +68,7 @@ Item {
         anchors.fill: parent
         propagateComposedEvents: true
         onClicked: mouse => {
-            processWatcher.toggleSort();
+            ProcessWatcher.toggleSort();
             mouse.accepted = false;
         }
     }
@@ -81,7 +81,7 @@ Item {
         anchors.margins: 10
         clip: true
 
-        model: processWatcher.processes
+        model: ProcessWatcher.processes
 
         delegate: Item {
             id: delegateRoot

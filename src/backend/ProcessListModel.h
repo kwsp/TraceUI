@@ -3,9 +3,11 @@
 #include "ProcessEntry.h"
 #include <QAbstractListModel>
 #include <QList>
+#include <QtQml/qqmlregistration.h>
 
 class ProcessListModel : public QAbstractListModel {
     Q_OBJECT
+    QML_ANONYMOUS
 
 public:
     enum Roles : uint16_t {

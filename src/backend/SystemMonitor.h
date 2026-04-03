@@ -2,9 +2,12 @@
 
 #include <QObject>
 #include <QList>
+#include <QtQml/qqmlregistration.h>
 
 class SystemMonitor : public QObject {
     Q_OBJECT
+    QML_ELEMENT
+    QML_UNCREATABLE("SystemMonitor is provided by the backend")
     Q_PROPERTY(QList<double> cpuUsagePercent READ cpuUsagePercent NOTIFY dataUpdated)
     Q_PROPERTY(int ramUsedMB READ ramUsedMB NOTIFY dataUpdated)
     Q_PROPERTY(int ramTotalMB READ ramTotalMB NOTIFY dataUpdated)

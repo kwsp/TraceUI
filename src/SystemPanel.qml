@@ -6,13 +6,13 @@ Item {
     width: 400
     height: 300
 
-    property var cores: systemMonitor.cpuUsagePercent || []
+    property var cores: SystemMonitor.cpuUsagePercent || []
     
     // Simple historical accumulation for the shader (stores up to 64 normalized samples)
     property var historyData: new Array(64).fill(0.0)
     
     Connections {
-        target: systemMonitor
+        target: SystemMonitor
         function onDataUpdated() {
             let avg = 0;
             if (root.cores.length > 0) {
@@ -109,11 +109,11 @@ Item {
             }
             Column {
                 Text { text: "LOAD"; color: Style.textLabel; font.pixelSize: 10; font.family: Style.fontData }
-                Text { text: systemMonitor.loadAverage1m.toFixed(2); color: Style.textPrimary; font.pixelSize: 14; font.family: Style.fontData }
+                Text { text: SystemMonitor.loadAverage1m.toFixed(2); color: Style.textPrimary; font.pixelSize: 14; font.family: Style.fontData }
             }
             Column {
                 Text { text: "TEMP"; color: Style.textLabel; font.pixelSize: 10; font.family: Style.fontData }
-                Text { text: systemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.pixelSize: 14; font.family: Style.fontData }
+                Text { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.pixelSize: 14; font.family: Style.fontData }
             }
         }
     }
@@ -144,7 +144,7 @@ Item {
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: systemMonitor.cpuName
+                text: SystemMonitor.cpuName
                 color: Style.textLabel
                 font.pixelSize: 10
                 font.family: Style.fontData
@@ -187,7 +187,7 @@ Item {
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: systemMonitor.ramUsedMB + " MB / " + systemMonitor.ramTotalMB + " MB"
+                text: SystemMonitor.ramUsedMB + " MB / " + SystemMonitor.ramTotalMB + " MB"
                 color: Style.textLabel
                 font.pixelSize: 10
                 font.family: Style.fontData
@@ -202,7 +202,7 @@ Item {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             
-            property real usageRatio: systemMonitor.ramTotalMB > 0 ? systemMonitor.ramUsedMB / systemMonitor.ramTotalMB : 0.0
+            property real usageRatio: SystemMonitor.ramTotalMB > 0 ? SystemMonitor.ramUsedMB / SystemMonitor.ramTotalMB : 0.0
             fragmentShader: "qrc:/shaders/memorygrid.frag.qsb"
         }
     }
