@@ -20,11 +20,13 @@ class NetworkHistoryProvider : public QQuickItem {
   QML_ELEMENT
 
   static constexpr int kSize = 128;
-  static constexpr float kMinMaxReference = 1048.576F; // 1 KB/s floor to avoid noise zooming
+  static constexpr float kMinMaxReference =
+      1048.576F; // 1 KB/s floor to avoid noise zooming
   static constexpr float kEpsilon = 1e-4F;
   static constexpr float kScaleThreshold = 1e-5F;
 
   Q_PROPERTY(float graphScale READ graphScale NOTIFY graphScaleChanged)
+  Q_PROPERTY(float phase READ phase)
 
 public:
   explicit NetworkHistoryProvider(QQuickItem *parent = nullptr);
@@ -38,11 +40,15 @@ public:
   [[nodiscard]] QSGTextureProvider *textureProvider() const override;
 
   [[nodiscard]] float graphScale() const { return m_graphScale; }
+  [[nodiscard]] float phase() const {
+    return static_cast<float>(m_writeIndex) / static_cast<float>(kSize);
+  }
 
   Q_INVOKABLE void onDataUpdated(double dlBytesPerSec, double ulBytesPerSec);
 
 signals:
   void graphScaleChanged();
+  void phaseChanged();
 
 protected:
   QSGNode *updatePaintNode(QSGNode *oldNode,

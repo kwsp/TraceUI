@@ -27,6 +27,7 @@ void NetworkHistoryProvider::onDataUpdated(double dl, double ul) {
     m_dlHistory.at(m_writeIndex) = static_cast<float>(dl);
     m_ulHistory.at(m_writeIndex) = static_cast<float>(ul);
     m_writeIndex = (m_writeIndex + 1) % kSize;
+    emit phaseChanged();
     m_dirty = true;
 
     float maxVal = NetworkHistoryProvider::kMinMaxReference;

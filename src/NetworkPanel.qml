@@ -94,13 +94,23 @@ Item {
                 font.pixelSize: 10
                 font.family: Style.fontData
             }
-            Text {
+            Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: "DL: " + (NetworkMonitor.downloadBytesPerSec / 1024.0).toFixed(1) + " KB/s  UL: " + (NetworkMonitor.uploadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
-                color: Style.textLabel
-                font.pixelSize: 10
-                font.family: Style.fontData
+                spacing: 15
+
+                Text {
+                    text: "DL: " + (NetworkMonitor.downloadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
+                    color: Style.accentGold
+                    font.pixelSize: 10
+                    font.family: Style.fontData
+                }
+                Text {
+                    text: "UL: " + (NetworkMonitor.uploadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
+                    color: Style.accentSilver
+                    font.pixelSize: 10
+                    font.family: Style.fontData
+                }
             }
         }
 
@@ -112,8 +122,9 @@ Item {
             anchors.right: parent.right
             anchors.topMargin: 5
 
-            property var networkHistory: histProvider
-            property real graphScale: histProvider.graphScale
+            property var  networkHistory: histProvider
+            property real graphScale:     histProvider.graphScale
+            property real phase:          histProvider.phase
 
             fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
         }
