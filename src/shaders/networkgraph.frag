@@ -22,14 +22,21 @@ float distToSegment(vec2 p, vec2 a, vec2 b) {
 void main() {
     vec2 uv = qt_TexCoord0;
 
-    // Scrolling background grid: transparent between lines
-    vec2 gridUV = fract(vec2((uv.x + phase) * 20.0, uv.y * 10.0));
-    float gridLine = step(gridUV.x, 0.05) + step(gridUV.y, 0.05);
-    vec4 gridCol = vec4(0.15, 0.15, 0.15, 0.4) * step(0.5, gridLine);
+    // Background grid: 8 cells — lines at edges, center, and 3 between each
+    float gy = uv.y * 8.0;
+    float distY = abs(gy - round(gy)) / 8.0;
+    float hLine = smoothstep(0.003, 0.0, distY);
 
-    // Center divider
-    float centerLine = smoothstep(0.005, 0.0, abs(uv.y - 0.5));
-    gridCol += vec4(0.2, 0.2, 0.2, 0.6) * centerLine;
+    float gx = (uv.x + phase) * 8.0;
+    float distX = abs(gx - round(gx)) / 8.0;
+    float vLine = smoothstep(0.003, 0.0, distX);
+
+    float gridLine = max(hLine, vLine);
+    vec4 gridCol = vec4(0.15, 0.15, 0.15, 0.4) * gridLine;
+
+    // Center grid line (zero crossing) — brighter than other grid lines
+    float centerLine = smoothstep(0.003, 0.0, abs(uv.y - 0.5));
+    gridCol = mix(gridCol, vec4(0.25, 0.25, 0.25, 0.7), centerLine);
 
     // Network history: R = download, G = upload
     // Sample adjacent texel centers for line segment rendering
@@ -51,7 +58,7 @@ void main() {
     float glowDL = 0.003 / max(distDL, 0.001) * smoothstep(0.0, 0.02, dlAvg);
     float dlYInterp = mix(dlY1, dlY2, clamp((uv.x - x1) / (x2 - x1), 0.0, 1.0));
     float dlFill = step(dlYInterp, uv.y) * step(uv.y, 0.5);
-    vec4 dlCol = vec4(0.79, 0.66, 0.30, 1.0) * min(beamDL + glowDL, 1.0) + vec4(0.35, 0.30, 0.15, 0.3) * dlFill;
+    vec4 dlCol = clamp(vec4(0.79, 0.66, 0.30, 1.0) * min(beamDL + glowDL, 1.0) + vec4(0.35, 0.30, 0.15, 0.3) * dlFill, 0.0, 1.0);
 
     // UL curve: Silver (#a8b0b8) — line segment between adjacent points
     float ulY1 = 0.5 + hist1.g * graphScale * 0.45;
@@ -62,7 +69,7 @@ void main() {
     float glowUL = 0.003 / max(distUL, 0.001) * smoothstep(0.0, 0.02, ulAvg);
     float ulYInterp = mix(ulY1, ulY2, clamp((uv.x - x1) / (x2 - x1), 0.0, 1.0));
     float ulFill = step(0.5, uv.y) * step(uv.y, ulYInterp);
-    vec4 ulCol = vec4(0.66, 0.69, 0.72, 1.0) * min(beamUL + glowUL, 1.0) + vec4(0.30, 0.30, 0.30, 0.3) * ulFill;
+    vec4 ulCol = clamp(vec4(0.66, 0.69, 0.72, 1.0) * min(beamUL + glowUL, 1.0) + vec4(0.30, 0.30, 0.30, 0.3) * ulFill, 0.0, 1.0);
 
     vec4 finalCol = gridCol;
     finalCol = mix(finalCol, dlCol, dlCol.a);
