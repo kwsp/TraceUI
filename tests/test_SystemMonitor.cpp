@@ -12,8 +12,9 @@ class SystemMonitorTest : public QObject {
 private slots:
     void testInitialValues() {
         SystemMonitorMacOS monitor;
-        
-        QVERIFY(monitor.ramTotalMB() == 0);
+
+        // ramTotalMB is set in constructor from sysctl
+        QVERIFY(monitor.ramTotalMB() > 0);
         QVERIFY(monitor.ramUsedMB() == 0);
         QVERIFY(monitor.cpuUsagePercent().isEmpty());
     }

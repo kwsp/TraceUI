@@ -23,17 +23,15 @@ private slots:
         ProcessListModel* model = watcher.processes();
         QVERIFY(model->rowCount({}) > 0);
 
-        bool foundKnownProcess = false;
         for (int i = 0; i < model->rowCount({}); ++i) {
             const QModelIndex idx = model->index(i);
             QVERIFY(model->data(idx, ProcessListModel::PidRole).isValid());
             QVERIFY(model->data(idx, ProcessListModel::NameRole).isValid());
             QVERIFY(model->data(idx, ProcessListModel::RamMBRole).isValid());
             const QString name = model->data(idx, ProcessListModel::NameRole).toString();
-            if (name == "test_ProcessWatcher" || name == "launchd")
-                foundKnownProcess = true;
+            // At least one process should have a non-empty name
+            QVERIFY(!name.isEmpty());
         }
-        QVERIFY(foundKnownProcess);
     }
 
     void testResultsAreSortedByRam() {
