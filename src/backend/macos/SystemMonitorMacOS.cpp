@@ -73,27 +73,41 @@ void SystemMonitorMacOS::updateCpuUsage() {
       m_cpuUsagePercent.resize(m_numCPUs);
       long long globalTotals = 0;
       long long globalIdles = 0;
+      long long globalUser = 0;
+      long long globalSystem = 0;
       for (unsigned int i = 0; i < m_numCPUs; ++i) {
-        long long inUse =
-            (long long)(cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER] -
-             m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER]) +
-            (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM] -
-             m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM]) +
+        long long user =
+            cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER] -
+            m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER] +
             (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_NICE] -
              m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_NICE]);
+        long long system =
+            cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM] -
+            m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM];
         long long idle =
             cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE] -
             m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE];
-        long long total = inUse + idle;
+        long long total = user + system + idle;
         m_cpuUsagePercent[i] =
-            (total == 0) ? 0.0 : static_cast<double>(inUse) / total * 100.0;
+            (total == 0) ? 0.0
+                         : static_cast<double>(user + system) / total * 100.0;
         globalTotals += total;
         globalIdles += idle;
+        globalUser += user;
+        globalSystem += system;
       }
-      m_cpuUsageTotal = (globalTotals <= 0)
-                            ? 0.0
-                            : static_cast<double>(globalTotals - globalIdles) /
-                                  globalTotals * 100.0;
+      if (globalTotals > 0) {
+        m_cpuUsageTotal = static_cast<double>(globalTotals - globalIdles) /
+                          globalTotals * 100.0;
+        m_cpuUsageUser =
+            static_cast<double>(globalUser) / globalTotals * 100.0;
+        m_cpuUsageSystem =
+            static_cast<double>(globalSystem) / globalTotals * 100.0;
+      } else {
+        m_cpuUsageTotal = 0.0;
+        m_cpuUsageUser = 0.0;
+        m_cpuUsageSystem = 0.0;
+      }
 
       size_t prevCpuInfoSize = sizeof(integer_t) * m_numPrevCpuInfo;
       vm_deallocate(mach_task_self(), (vm_address_t)m_prevCpuInfo,

@@ -24,8 +24,12 @@ qt_add_qml_module(${PROJECT_NAME}
     backend/ProcessWatcher.cpp
     backend/NetworkMonitor.h
     backend/NetworkMonitor.cpp
+    backend/ScrollingHistoryProvider.h
+    backend/ScrollingHistoryProvider.cpp
     backend/NetworkHistoryProvider.h
     backend/NetworkHistoryProvider.cpp
+    backend/CpuHistoryProvider.h
+    backend/CpuHistoryProvider.cpp
     backend/ProcessListModel.h
     backend/ProcessListModel.cpp
 )

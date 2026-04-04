@@ -6,29 +6,17 @@ Item {
     width: 400
     height: 300
 
-    property var cores: SystemMonitor.cpuUsagePercent || []
-
-    // Simple historical accumulation for the shader (stores up to 64 normalized samples)
-    property var historyData: new Array(64).fill(0.0)
+    CpuHistoryProvider {
+        id: cpuHistProvider
+        visible: false
+        width: 1
+        height: 1
+    }
 
     Connections {
         target: SystemMonitor
         function onDataUpdated() {
-            let avg = SystemMonitor.cpuUsageTotal;
-
-            // Shift history
-            var temp = root.historyData;
-            temp.shift();
-            temp.push(avg / 100.0);
-            root.historyData = temp;
-
-            // Re-assign to force shader binding update
-            cpuShader.history1 = Qt.vector4d(temp[0], temp[1], temp[2], temp[3]);
-            // Just passing a few vectors for simplicity to the shader instead of a full texture,
-            // or we can use QML Canvas if history gets too complex, but user requested shaders.
-            // A more robust shader reads from a 1D texture, but for this exercise we'll pass
-            // the latest reading and animate a procedural wave bounded by that reading.
-            cpuShader.currentUsage = avg / 100.0;
+            cpuHistProvider.onDataUpdated(SystemMonitor.cpuUsageUser, SystemMonitor.cpuUsageSystem);
         }
     }
 
@@ -169,13 +157,23 @@ Item {
                 font.pixelSize: 10
                 font.family: Style.fontData
             }
-            Text {
+            Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: SystemMonitor.cpuName
-                color: Style.textLabel
-                font.pixelSize: 10
-                font.family: Style.fontData
+                spacing: 15
+
+                Text {
+                    text: "USR: " + SystemMonitor.cpuUsageUser.toFixed(1) + "%"
+                    color: Style.accentGold
+                    font.pixelSize: 10
+                    font.family: Style.fontData
+                }
+                Text {
+                    text: "SYS: " + SystemMonitor.cpuUsageSystem.toFixed(1) + "%"
+                    color: Style.accentSilver
+                    font.pixelSize: 10
+                    font.family: Style.fontData
+                }
             }
         }
 
@@ -187,16 +185,9 @@ Item {
             anchors.right: parent.right
             height: 50
 
-            property real currentUsage: 0.1
-            property vector4d history1: Qt.vector4d(0, 0, 0, 0)
-            property real time
-
-            NumberAnimation on time {
-                loops: Animation.Infinite
-                from: 0
-                to: Math.PI * 2
-                duration: 2000
-            }
+            property var  cpuHistory: cpuHistProvider
+            property real graphScale: cpuHistProvider.graphScale
+            property real phase:      cpuHistProvider.phase
 
             fragmentShader: "qrc:/shaders/cpugraph.frag.qsb"
         }

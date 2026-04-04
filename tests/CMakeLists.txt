@@ -40,6 +40,17 @@ target_link_libraries(test_NetworkMonitor PRIVATE Qt6::Core Qt6::Test TraceUIBac
 set_property(TARGET test_NetworkMonitor PROPERTY AUTOMOC ON)
 add_test(NAME test_NetworkMonitor COMMAND test_NetworkMonitor)
 
+# HistoryProvider Test
+qt_add_executable(test_HistoryProvider test_HistoryProvider.cpp
+    ../src/backend/ScrollingHistoryProvider.cpp
+    ../src/backend/CpuHistoryProvider.cpp
+    ../src/backend/NetworkHistoryProvider.cpp
+)
+target_include_directories(test_HistoryProvider PRIVATE ../src)
+target_link_libraries(test_HistoryProvider PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test)
+set_property(TARGET test_HistoryProvider PROPERTY AUTOMOC ON)
+add_test(NAME test_HistoryProvider COMMAND test_HistoryProvider)
+
 # QML UI Tests
 qt_add_executable(test_ui test_ui.cpp)
 target_link_libraries(test_ui PRIVATE Qt6::Core Qt6::Qml Qt6::QuickTest TraceUIBackend)

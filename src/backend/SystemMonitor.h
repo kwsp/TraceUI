@@ -14,6 +14,8 @@ class SystemMonitor : public QObject {
     Q_PROPERTY(int swapUsedMB READ swapUsedMB NOTIFY dataUpdated)
     Q_PROPERTY(double cpuTempCelsius READ cpuTempCelsius NOTIFY dataUpdated)
     Q_PROPERTY(double cpuUsageTotal READ cpuUsageTotal NOTIFY dataUpdated)
+    Q_PROPERTY(double cpuUsageUser READ cpuUsageUser NOTIFY dataUpdated)
+    Q_PROPERTY(double cpuUsageSystem READ cpuUsageSystem NOTIFY dataUpdated)
     Q_PROPERTY(double loadAverage1m READ loadAverage1m NOTIFY dataUpdated)
     Q_PROPERTY(QString cpuName READ cpuName CONSTANT)
     Q_PROPERTY(QString uptime READ uptime NOTIFY dataUpdated)
@@ -33,6 +35,8 @@ public:
     [[nodiscard]] double cpuTempCelsius() const;
     [[nodiscard]] double loadAverage1m() const;
     [[nodiscard]] double cpuUsageTotal() const;
+    [[nodiscard]] double cpuUsageUser() const;
+    [[nodiscard]] double cpuUsageSystem() const;
     [[nodiscard]] QString cpuName() const;
     [[nodiscard]] QString uptime() const;
 
@@ -49,6 +53,8 @@ protected:
     double m_cpuTempCelsius = 0.0;
     double m_loadAverage1m = 0.0;
     double m_cpuUsageTotal = 0.0;
+    double m_cpuUsageUser = 0.0;
+    double m_cpuUsageSystem = 0.0;
     QString m_cpuName;
     QString m_uptime;
 };

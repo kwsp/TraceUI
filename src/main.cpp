@@ -3,6 +3,7 @@
 #include <QQuickWindow>
 #include <QtQml/qqml.h>
 
+#include "backend/CPuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
 
 #ifdef Q_OS_MACOS
@@ -32,6 +33,7 @@ int main(int argc, char *argv[]) {
 
   qmlRegisterType<NetworkHistoryProvider>("TraceUI", 0, 1,
                                           "NetworkHistoryProvider");
+  qmlRegisterType<CpuHistoryProvider>("TraceUI", 0, 1, "CpuHistoryProvider");
 
   QQmlApplicationEngine engine;
   engine.loadFromModule(APP_MODULE_NAME, "Main");
