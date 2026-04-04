@@ -71,20 +71,29 @@ void SystemMonitorMacOS::updateCpuUsage() {
   if (err == KERN_SUCCESS) {
     if (m_prevCpuInfo) {
       m_cpuUsagePercent.resize(m_numCPUs);
+      long long globalTotals = 0;
+      long long globalIdles = 0;
       for (unsigned int i = 0; i < m_numCPUs; ++i) {
-        integer_t inUse =
-            (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER] -
+        long long inUse =
+            (long long)(cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER] -
              m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER]) +
             (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM] -
              m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM]) +
             (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_NICE] -
              m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_NICE]);
-        integer_t total =
-            inUse + (cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE] -
-                     m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE]);
+        long long idle =
+            cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE] -
+            m_prevCpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE];
+        long long total = inUse + idle;
         m_cpuUsagePercent[i] =
             (total == 0) ? 0.0 : static_cast<double>(inUse) / total * 100.0;
+        globalTotals += total;
+        globalIdles += idle;
       }
+      m_cpuUsageTotal = (globalTotals <= 0)
+                            ? 0.0
+                            : static_cast<double>(globalTotals - globalIdles) /
+                                  globalTotals * 100.0;
 
       size_t prevCpuInfoSize = sizeof(integer_t) * m_numPrevCpuInfo;
       vm_deallocate(mach_task_self(), (vm_address_t)m_prevCpuInfo,

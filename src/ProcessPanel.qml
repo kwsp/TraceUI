@@ -87,7 +87,7 @@ Item {
             id: delegateRoot
             required property int pid
             required property string name
-            required property int cpuPct
+            required property double cpuPct
             required property int ramMB
 
             width: ListView.view.width
@@ -102,13 +102,27 @@ Item {
                 font.family: Style.fontData
             }
 
-            Text {
+            Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: delegateRoot.cpuPct + "%  " + delegateRoot.ramMB + " MB"
-                color: Style.textPrimary
-                font.pixelSize: 12
-                font.family: Style.fontData
+                spacing: 0
+
+                Text {
+                    width: 60
+                    horizontalAlignment: Text.AlignRight
+                    text: delegateRoot.cpuPct.toFixed(1) + "%"
+                    color: Style.textPrimary
+                    font.pixelSize: 12
+                    font.family: Style.fontData
+                }
+                Text {
+                    width: 70
+                    horizontalAlignment: Text.AlignRight
+                    text: delegateRoot.ramMB + " MB"
+                    color: Style.textPrimary
+                    font.pixelSize: 12
+                    font.family: Style.fontData
+                }
             }
         }
     }

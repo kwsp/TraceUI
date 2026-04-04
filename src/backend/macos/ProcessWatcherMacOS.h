@@ -12,6 +12,10 @@ class ProcessWatcherMacOS : public ProcessWatcher {
 
 public:
   explicit ProcessWatcherMacOS(QObject *parent = nullptr);
+  ProcessWatcherMacOS(const ProcessWatcherMacOS &) = delete;
+  ProcessWatcherMacOS &operator=(const ProcessWatcherMacOS &) = delete;
+  ProcessWatcherMacOS(ProcessWatcherMacOS &&) = delete;
+  ProcessWatcherMacOS &operator=(ProcessWatcherMacOS &&) = delete;
   ~ProcessWatcherMacOS() override = default;
 
   void update() override;

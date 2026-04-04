@@ -14,12 +14,7 @@ Item {
     Connections {
         target: SystemMonitor
         function onDataUpdated() {
-            let avg = 0;
-            if (root.cores.length > 0) {
-                for (let i = 0; i < root.cores.length; i++)
-                    avg += root.cores[i];
-                avg /= root.cores.length;
-            }
+            let avg = SystemMonitor.cpuUsageTotal;
 
             // Shift history
             var temp = root.historyData;

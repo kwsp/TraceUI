@@ -88,8 +88,9 @@ void ProcessWatcherMacOS::performUpdate() {
       const uint64_t delta = totalCpu - m_cpuTimes[pid];
       const double deltaNs =
           static_cast<double>(delta) * m_timebase.numer / m_timebase.denom;
-      cpuPct = std::clamp(deltaNs / static_cast<double>(elapsedNs) * 100.0, 0.0,
-                          100.0 * m_coreCount);
+      cpuPct = std::clamp(
+          deltaNs / (static_cast<double>(elapsedNs) * m_coreCount) * 100.0,
+          0.0, 100.0 * m_coreCount);
     }
 
     if (!m_nameCache.contains(pid)) {
@@ -106,7 +107,7 @@ void ProcessWatcherMacOS::performUpdate() {
     entry.pid = pid;
     entry.name = m_nameCache[pid];
     entry.ramMB = static_cast<int>(pti.pti_resident_size / kBytesPerMB);
-    entry.cpuPct = static_cast<int>(cpuPct);
+    entry.cpuPct = cpuPct;
     m_allEntries.append(std::move(entry));
   }
 
