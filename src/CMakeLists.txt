@@ -60,8 +60,6 @@ qt6_add_resources(${PROJECT_NAME} "traceui-resources"
   FILES
     fonts/BlenderPro-Book.ttf
     fonts/Hack-Regular.ttf
-
-    textures/earth_landmask.png
 )
 
 qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
@@ -70,7 +68,6 @@ qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
   PREFIX "/"
   FILES
     shaders/dotgrid.frag
-    shaders/globe.frag
     shaders/cpugraph.frag
     shaders/memorygrid.frag
     shaders/networkgraph.frag
@@ -87,6 +84,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt6::Gui
   Qt6::Qml
   Qt6::Quick
+  EncomGlobe
+  EncomGlobeplugin
 )
 
 # Generate .qmlls.ini
