@@ -12,9 +12,7 @@ static constexpr uint64_t kBytesPerMB = 1024ULL * 1024;
 ProcessWatcherMacOS::ProcessWatcherMacOS(QObject *parent)
     : ProcessWatcher(parent) {
   mach_timebase_info(&m_timebase);
-  m_coreCount = static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
-  if (m_coreCount < 1)
-    m_coreCount = 1;
+  m_coreCount = std::max(static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN)), 1);
   m_pollTimer.start();
   connect(&m_timer, &QTimer::timeout, this,
           &ProcessWatcherMacOS::performUpdate);
@@ -89,8 +87,8 @@ void ProcessWatcherMacOS::performUpdate() {
       const double deltaNs =
           static_cast<double>(delta) * m_timebase.numer / m_timebase.denom;
       cpuPct = std::clamp(
-          deltaNs / (static_cast<double>(elapsedNs) * m_coreCount) * 100.0,
-          0.0, 100.0 * m_coreCount);
+          deltaNs / (static_cast<double>(elapsedNs) * m_coreCount) * 100.0, 0.0,
+          100.0);
     }
 
     if (!m_nameCache.contains(pid)) {
@@ -103,12 +101,11 @@ void ProcessWatcherMacOS::performUpdate() {
         m_nameCache[pid] = QStringLiteral("Unknown");
     }
 
-    ProcessEntry entry;
-    entry.pid = pid;
-    entry.name = m_nameCache[pid];
-    entry.ramMB = static_cast<int>(pti.pti_resident_size / kBytesPerMB);
-    entry.cpuPct = cpuPct;
-    m_allEntries.append(std::move(entry));
+    m_allEntries.append(ProcessEntry{
+        .name = m_nameCache[pid],
+        .pid = pid,
+        .ramMB = static_cast<int>(pti.pti_resident_size / kBytesPerMB),
+        .cpuPct = cpuPct});
   }
 
   for (auto it = m_nameCache.begin(); it != m_nameCache.end();) {
