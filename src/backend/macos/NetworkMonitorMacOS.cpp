@@ -5,14 +5,15 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <string_view>
 #include <sys/socket.h>
 #include <sys/sysctl.h>
 
 static constexpr int kPollIntervalMs = 2000;
 static constexpr int kPingWindowSize = 20; // sliding window for packet loss
 
-NetworkMonitorMacOS::NetworkMonitorMacOS(QObject *parent) : NetworkMonitor(parent) {
-    m_pingProcess = new QProcess(this);
+NetworkMonitorMacOS::NetworkMonitorMacOS(QObject *parent)
+    : NetworkMonitor(parent), m_pingProcess(new QProcess(this)) {
     connect(m_pingProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
             &NetworkMonitorMacOS::onPingFinished);
 
@@ -42,15 +43,15 @@ void NetworkMonitorMacOS::updateIPv4Address() {
     m_ipv4Address = "0.0.0.0";
     m_isOnline = false;
 
-    for (struct ifaddrs *ifa = ifap; ifa; ifa = ifa->ifa_next) {
+    for (struct ifaddrs *ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
         if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
             continue;
 
-        QString name(ifa->ifa_name);
+        std::string_view name(ifa->ifa_name);
         // Skip loopback and virtual interfaces
-        if (name == "lo0" || name.startsWith("utun") || name.startsWith("awdl") ||
-            name.startsWith("llw") || name.startsWith("bridge") || name.startsWith("gif") ||
-            name.startsWith("stf") || name.startsWith("anpi"))
+        if (name == "lo0" || name.starts_with("utun") || name.starts_with("awdl") ||
+            name.starts_with("llw") || name.starts_with("bridge") || name.starts_with("gif") ||
+            name.starts_with("stf") || name.starts_with("anpi"))
             continue;
 
         auto *sin = reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr);
@@ -59,7 +60,7 @@ void NetworkMonitorMacOS::updateIPv4Address() {
             QString addr = QString::fromUtf8(buf);
             if (addr != "0.0.0.0" && addr != "127.0.0.1") {
                 m_ipv4Address = addr;
-                m_interface = name;
+                m_interface = QString::fromUtf8(name);
                 m_isOnline = true;
                 break;
             }
@@ -93,8 +94,7 @@ void NetworkMonitorMacOS::onPingFinished(int exitCode, QProcess::ExitStatus /*st
     QString errOutput = m_pingProcess->readAllStandardError();
 
     if (exitCode != 0) {
-        qDebug() << "[ping] exit code:" << exitCode
-                 << "stdout:" << output.left(200)
+        qDebug() << "[ping] exit code:" << exitCode << "stdout:" << output.left(200)
                  << "stderr:" << errOutput.left(200);
         m_pingsLost++;
         m_pingMs = -1;
