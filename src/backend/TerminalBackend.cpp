@@ -24,10 +24,25 @@ static int screen_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *u
     return 1;
 }
 
+static int screen_settermprop(VTermProp prop, VTermValue *val, void *user) {
+    return 1;
+}
+
 static VTermScreenCallbacks screen_callbacks = {
     .damage = screen_damage,
+    .moverect = nullptr,
     .movecursor = screen_movecursor,
+    .settermprop = screen_settermprop,
+    .bell = nullptr,
+    .resize = nullptr,
+    .sb_pushline = nullptr,
+    .sb_popline = nullptr,
 };
+
+static void on_vterm_output(const char *s, size_t len, void *user) {
+    auto *backend = static_cast<TerminalBackend *>(user);
+    backend->writeToPty(QByteArray(s, len));
+}
 
 TerminalBackend::TerminalBackend(QObject *parent)
     : QObject(parent)
@@ -41,14 +56,22 @@ TerminalBackend::~TerminalBackend() {
 }
 
 void TerminalBackend::setupVTerm() {
+    if (m_vt) vterm_free(m_vt);
     m_vt = vterm_new(m_rows, m_cols);
     vterm_set_utf8(m_vt, 1);
+    vterm_output_set_callback(m_vt, on_vterm_output, this);
     m_vts = vterm_obtain_screen(m_vt);
     vterm_screen_set_callbacks(m_vts, &screen_callbacks, this);
     vterm_screen_reset(m_vts, 1);
 }
 
 void TerminalBackend::start(const QString &shell) {
+    qDebug() << "Starting shell:" << shell << "rows:" << m_rows << "cols:" << m_cols;
+    
+    // Initial test message to verify rendering
+    const char *msg = "TraceUI Terminal Initializing...\r\n";
+    vterm_input_write(m_vt, msg, strlen(msg));
+
     struct winsize ws = { (unsigned short)m_rows, (unsigned short)m_cols, 0, 0 };
     
     m_childPid = forkpty(&m_masterFd, nullptr, nullptr, &ws);
@@ -59,11 +82,12 @@ void TerminalBackend::start(const QString &shell) {
         execl(shellPath, shellPath, nullptr);
         _exit(1);
     } else if (m_childPid > 0) { // Parent process
+        qDebug() << "Parent process: child PID is" << m_childPid << "master FD is" << m_masterFd;
         fcntl(m_masterFd, F_SETFL, O_NONBLOCK);
         m_notifier = new QSocketNotifier(m_masterFd, QSocketNotifier::Read, this);
         connect(m_notifier, &QSocketNotifier::activated, this, &TerminalBackend::onPtyReadReady);
     } else {
-        qWarning() << "forkpty failed";
+        qWarning() << "forkpty failed:" << strerror(errno);
     }
 }
 
@@ -71,8 +95,8 @@ void TerminalBackend::onPtyReadReady() {
     char buffer[4096];
     ssize_t bytesRead = read(m_masterFd, buffer, sizeof(buffer));
     if (bytesRead > 0) {
+        qDebug() << "PTY -> vterm:" << bytesRead << "bytes:" << QByteArray(buffer, bytesRead).toHex(':');
         vterm_input_write(m_vt, buffer, bytesRead);
-        emit dataReceived(QByteArray(buffer, bytesRead));
     } else if (bytesRead == 0 || (bytesRead < 0 && errno != EAGAIN)) {
         m_notifier->setEnabled(false);
         qDebug() << "PTY closed or error";
@@ -81,24 +105,32 @@ void TerminalBackend::onPtyReadReady() {
 
 void TerminalBackend::sendInput(const QString &input) {
     if (m_masterFd != -1) {
-        QByteArray data = input.toLocal8Bit();
+        QByteArray data = input.toUtf8();
+        write(m_masterFd, data.data(), data.size());
+    }
+}
+
+void TerminalBackend::writeToPty(const QByteArray &data) {
+    if (m_masterFd != -1) {
         write(m_masterFd, data.data(), data.size());
     }
 }
 
 void TerminalBackend::setRows(int rows) {
+    if (rows <= 0) return;
     if (m_rows != rows) {
         m_rows = rows;
-        vterm_set_size(m_vt, m_rows, m_cols);
+        if (m_vt) vterm_set_size(m_vt, m_rows, m_cols);
         resizePty();
         emit rowsChanged();
     }
 }
 
 void TerminalBackend::setCols(int cols) {
+    if (cols <= 0) return;
     if (m_cols != cols) {
         m_cols = cols;
-        vterm_set_size(m_vt, m_rows, m_cols);
+        if (m_vt) vterm_set_size(m_vt, m_rows, m_cols);
         resizePty();
         emit colsChanged();
     }
@@ -120,6 +152,7 @@ void TerminalBackend::setCursorPos(int row, int col) {
 }
 
 QString TerminalBackend::getLineText(int row) const {
+    vterm_screen_flush_damage(m_vts);
     if (row < 0 || row >= m_rows) return QString();
     
     QString line;
@@ -131,11 +164,18 @@ QString TerminalBackend::getLineText(int row) const {
         if (cell.chars[0] == 0) {
             line.append(" ");
         } else {
-            // libvterm stores chars as uint32_t (Unicode points)
             for (int i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i]; ++i) {
-                line.append(QChar(cell.chars[i]));
+                uint32_t c = cell.chars[i];
+                if (QChar::requiresSurrogates(c)) {
+                    line.append(QChar::highSurrogate(c));
+                    line.append(QChar::lowSurrogate(c));
+                } else {
+                    line.append(QChar(static_cast<ushort>(c)));
+                }
             }
         }
     }
+    // Trim trailing spaces for better performance/rendering, but only if we want.
+    // For a terminal, trailing spaces are often part of the screen state.
     return line;
 }

@@ -24,6 +24,7 @@ public:
     void setRows(int rows);
     void setCols(int cols);
     void setCursorPos(int row, int col);
+    void writeToPty(const QByteArray &data);
 
     Q_INVOKABLE void sendInput(const QString &input);
     Q_INVOKABLE void start(const QString &shell = "/bin/zsh");

@@ -1,7 +1,7 @@
 import QtQuick
 import TraceUI
 
-Item {
+FocusScope {
     id: root
 
     TerminalBackend {
@@ -42,8 +42,10 @@ Item {
             onHeightChanged: updateDimensions()
 
             function updateDimensions() {
-                termBackend.cols = Math.floor(width / 9)
-                termBackend.rows = Math.floor(height / 18)
+                if (width > 0 && height > 0) {
+                    termBackend.cols = Math.floor(width / 9)
+                    termBackend.rows = Math.floor(height / 18)
+                }
             }
 
             delegate: Text {
@@ -53,22 +55,35 @@ Item {
                 color: Style.textPrimary
                 font.family: Style.fontData
                 font.pixelSize: 14
+                verticalAlignment: Text.AlignVCenter
             }
 
-            Rectangle {
-                id: cursor
-                width: 9
-                height: 18
-                color: Style.accentGold
-                x: termBackend.cursorCol * 9
-                y: termBackend.cursorRow * 18
-                visible: true
-
-                SequentialAnimation on opacity {
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 0.0; duration: 500 }
-                    NumberAnimation { from: 0.0; to: 1.0; duration: 500 }
+            Connections {
+                target: termBackend
+                function onCursorMoved() {
+                    let rowY = termBackend.cursorRow * 18
+                    if (rowY < terminalView.contentY) {
+                        terminalView.contentY = rowY
+                    } else if (rowY + 18 > terminalView.contentY + terminalView.height) {
+                        terminalView.contentY = rowY + 18 - terminalView.height
+                    }
                 }
+            }
+        }
+
+        Rectangle {
+            id: cursor
+            width: 9
+            height: 18
+            color: Style.accentGold
+            x: 10 + termBackend.cursorCol * 9
+            y: 10 + termBackend.cursorRow * 18 - terminalView.contentY
+            visible: root.activeFocus && (y >= 10 && y <= terminalView.height + 10)
+
+            SequentialAnimation on opacity {
+                loops: Animation.Infinite
+                NumberAnimation { from: 1.0; to: 0.0; duration: 500 }
+                NumberAnimation { from: 0.0; to: 1.0; duration: 500 }
             }
         }
     }
@@ -76,6 +91,7 @@ Item {
     // Keyboard handling
     focus: true
     Keys.onPressed: (event) => {
+        console.log("Key pressed:", event.key, "text:", event.text);
         if (event.modifiers & Qt.ControlModifier) {
             if (event.key >= Qt.Key_A && event.key <= Qt.Key_Z) {
                 // Ctrl+A is 1, Ctrl+B is 2, etc.
