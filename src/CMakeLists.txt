@@ -13,6 +13,7 @@ set(TRACEUI_QML_FILES
   Style.qml
   LayoutStore.qml
   AnimConfig.qml
+  TurnOnReveal.qml
   Main.qml
   SystemPanel.qml
   ProcessPanel.qml

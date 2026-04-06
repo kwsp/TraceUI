@@ -20,13 +20,9 @@ Window {
     }
 
     // ── Phase tracking ───────────────────────────────────────────────────────
-    // Phases: 0 = blank, 1 = terminal line appears, 2 = lines expand,
-    //         3 = terminal content fades in, 4 = panels fade in,
-    //         5 = globe intro, 6 = done
+    // Phases: 0 = blank, 1 = terminal reveal, 2 = panels fade in,
+    //         3 = globe intro, 4 = done
     property int animPhase: 0
-
-    // ── Terminal reveal animation state ──────────────────────────────────────
-    property real termRevealHalfHeight: 0
 
     // 1. Dot grid background
     ShaderEffect {
@@ -92,86 +88,27 @@ Window {
         }
     }
 
-    // ── Terminal reveal lines (outside wrapper so visible during opacity=0) ───
-    // Position computed from wrapperTerm's screen position
-
-    // Top reveal line (moves upward from center)
-    Rectangle {
-        id: termLineTop
-        visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
-        z: 500
-        width: wrapperTerm.width
-        height: 2
-        color: Style.accentGold
-        opacity: 0
-
-        // Position in root coordinates
+    // ── Terminal reveal animation (outside wrapper to avoid opacity inheritance) ──
+    TurnOnReveal {
+        id: termReveal
+        visible: buildTerminal
         x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
-        y: {
-            let termCenterY = wrapperTerm.mapToItem(root.contentItem, 0, 0).y + wrapperTerm.height / 2
-            return termCenterY - root.termRevealHalfHeight
-        }
-    }
-
-    // Bottom reveal line (moves downward from center)
-    Rectangle {
-        id: termLineBottom
-        visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
-        z: 500
+        y: wrapperTerm.mapToItem(root.contentItem, 0, 0).y
         width: wrapperTerm.width
-        height: 2
-        color: Style.accentGold
-        opacity: 0
+        height: wrapperTerm.height
+        z: 500
 
-        // Position in root coordinates
-        x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
-        y: {
-            let termCenterY = wrapperTerm.mapToItem(root.contentItem, 0, 0).y + wrapperTerm.height / 2
-            return termCenterY + root.termRevealHalfHeight - 2
+        onExpandComplete: {
+            // Terminal content fades in
+            termContentAnim.start()
+        }
+
+        onDone: {
+            root.animPhase = 2
         }
     }
 
-    // ── Terminal reveal animations ───────────────────────────────────────────
-
-    // Phase 1: Center line appears (both lines at same position)
-    SequentialAnimation {
-        id: termLineAnim
-        ParallelAnimation {
-            NumberAnimation {
-                target: termLineTop
-                property: "opacity"
-                from: 0; to: 1
-                duration: AnimConfig.termLineAppearDur
-            }
-            NumberAnimation {
-                target: termLineBottom
-                property: "opacity"
-                from: 0; to: 1
-                duration: AnimConfig.termLineAppearDur
-            }
-        }
-        ScriptAction { script: root.animPhase = 2 }
-    }
-
-    // Phase 2: Lines expand outward (up/down) - no content yet
-    NumberAnimation {
-        id: termExpandAnim
-        target: root
-        property: "termRevealHalfHeight"
-        from: 1; to: wrapperTerm.height / 2
-        duration: AnimConfig.termExpandDur
-        easing.type: AnimConfig.termExpandEasing
-        onFinished: termContentDelayTimer.start()
-    }
-
-    // Delay before terminal content appears
-    Timer {
-        id: termContentDelayTimer
-        interval: AnimConfig.termContentDelay
-        onTriggered: root.animPhase = 3
-    }
-
-    // Phase 3: Terminal content fades in (lines become borders)
+    // Terminal content fade-in
     NumberAnimation {
         id: termContentAnim
         target: wrapperTerm
@@ -179,11 +116,6 @@ Window {
         from: 0; to: 1
         duration: AnimConfig.termExpandDur
         easing.type: AnimConfig.termExpandEasing
-        onFinished: {
-            termLineTop.visible = false
-            termLineBottom.visible = false
-            root.animPhase = 4
-        }
     }
 
     // ── Panel fade-in animations ─────────────────────────────────────────────
@@ -205,7 +137,7 @@ Window {
             easing.type: AnimConfig.panelFadeEasing
         }
 
-        onFinished: root.animPhase = 5
+        onFinished: root.animPhase = 3
     }
 
     // ── Globe intro trigger ──────────────────────────────────────────────────
@@ -222,7 +154,7 @@ Window {
         interval: AnimConfig.globeStartDelay
         onTriggered: {
             root.globeReady = true
-            root.animPhase = 6
+            root.animPhase = 4
         }
     }
 
@@ -230,28 +162,21 @@ Window {
     onAnimPhaseChanged: {
         switch (animPhase) {
         case 1:
-            termLineAnim.start()
+            termReveal.start()
             break
         case 2:
-            termExpandAnim.start()
-            break
-        case 3:
-            termContentAnim.start()
-            break
-        case 4:
             panelFadeTimer.start()
             break
-        case 5:
+        case 3:
             globeStartTimer.start()
             break
-        case 6:
+        case 4:
             // Animation complete
             break
         }
     }
 
     // ── Startup kick-off ─────────────────────────────────────────────────────
-    // Delay slightly to ensure SplitView layout is complete
     Timer {
         id: startupTimer
         interval: AnimConfig.startDelay
@@ -261,7 +186,7 @@ Window {
                 root.animPhase = 1
             } else {
                 // No terminal: skip straight to panel fade
-                root.animPhase = 4
+                root.animPhase = 2
             }
         }
     }
