@@ -36,10 +36,10 @@ Window {
 
     GlobePanel {
         id: globePanel
-        anchors.right: parent.right
-        anchors.top: parent.top
-        width: parent.width - 400 - 48 - 24 // Occupy remaining width
-        height: parent.height - 48
+        anchors.left: sysPanel.right
+        anchors.top: sysPanel.top
+        width: 300 // Shrunk
+        height: 300
         anchors.margins: 24
     }
 
@@ -57,5 +57,26 @@ Window {
         anchors.left: parent.left
         anchors.margins: 24
         anchors.topMargin: 24
+    }
+
+    // Terminal Placeholder (Right 2/3)
+    Rectangle {
+        id: terminalPlaceholder
+        anchors.left: globePanel.right
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.margins: 24
+        color: Qt.rgba(Style.accentGold.r, Style.accentGold.g, Style.accentGold.b, 0.05)
+        border.color: Style.borderDefault
+        border.width: 1
+
+        Text {
+            anchors.centerIn: parent
+            text: "TERMINAL SYSTEM OFFLINE"
+            color: Style.textDim
+            font.family: Style.fontDisplay
+            font.pixelSize: 32
+        }
     }
 }
