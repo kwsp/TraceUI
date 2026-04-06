@@ -10,13 +10,11 @@ Item {
 
     property real globeRadius: 1.5
     property color baseColor: Style.accentGold
-    property bool  introActive: false
 
     Globe {
         id: globe
         anchors.fill: parent
         anchors.margins: 10
-        visible: globePanel.introActive
         
         dayLength: 60000  // slow rotation
         scale: 1.1
@@ -31,7 +29,7 @@ Item {
         pinHeadSize: 0.3
         showLabels: false
         introDuration: AnimConfig.globeIntroDur
-        startupDelay: 0
+        startupDelay: AnimConfig.globeAbsoluteStart
         
         Component.onCompleted: {
             // Add some decorative points

@@ -20,8 +20,8 @@ Window {
     }
 
     // ── Phase tracking ───────────────────────────────────────────────────────
-    // Phases: 0 = blank, 1 = terminal reveal, 2 = panels fade in,
-    //         3 = globe intro, 4 = done
+    // Phases: 0 = blank, 1 = terminal reveal, 2 = panels fade in, 3 = done
+    // Globe intro is independent — controlled by Globe.startupDelay
     property int animPhase: 0
 
     // 1. Dot grid background
@@ -114,7 +114,7 @@ Window {
             easing.type: AnimConfig.panelFadeEasing
         }
 
-        onFinished: root.animPhase = 3
+        onFinished: root.animPhase = 3  // done
     }
 
     Timer {
@@ -123,16 +123,8 @@ Window {
         onTriggered: panelFadeAnim.start()
     }
 
-    Timer {
-        id: globeStartTimer
-        interval: AnimConfig.globeStartDelay
-        onTriggered: {
-            netPanel.globeIntroActive = true
-            root.animPhase = 4
-        }
-    }
-
     // ── Phase state machine ──────────────────────────────────────────────────
+    // Globe intro is handled by Globe.startupDelay (AnimConfig.globeAbsoluteStart)
     onAnimPhaseChanged: {
         switch (animPhase) {
         case 1:
@@ -142,10 +134,7 @@ Window {
             panelFadeTimer.start()
             break
         case 3:
-            globeStartTimer.start()
-            break
-        case 4:
-            // Animation complete
+            // Animation complete — globe starts on its own via startupDelay
             break
         }
     }

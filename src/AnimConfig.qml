@@ -23,4 +23,11 @@ QtObject {
     // Phase 3: Globe intro begins
     readonly property int globeStartDelay:      300   // delay after panels are visible
     readonly property int globeIntroDur:        2000  // globe's own intro animation
+
+    // Absolute offset from app start to globe intro (used by Globe.startupDelay).
+    // Must match the signal-driven phase chain above.
+    readonly property int globeAbsoluteStart:
+        startDelay + termLineAppearDur + termExpandDur +
+        termContentDelay + termContentFadeDur +
+        panelFadeDelay + panelFadeDur + globeStartDelay
 }

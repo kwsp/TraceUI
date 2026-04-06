@@ -7,7 +7,7 @@ Item {
     implicitWidth: 400
     implicitHeight: 700
 
-    property bool globeIntroActive: false
+
 
     NetworkHistoryProvider {
         id: netHistProvider
@@ -100,7 +100,6 @@ Item {
         GlobePanel {
             width: parent.width
             height: parent.height - 25
-            introActive: root.globeIntroActive
         }
     }
 
