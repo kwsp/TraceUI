@@ -7,10 +7,12 @@ qt_add_executable(${PROJECT_NAME}
 
 set_source_files_properties(Style.qml       PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(LayoutStore.qml  PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(AnimConfig.qml   PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 set(TRACEUI_QML_FILES
   Style.qml
   LayoutStore.qml
+  AnimConfig.qml
   Main.qml
   SystemPanel.qml
   ProcessPanel.qml

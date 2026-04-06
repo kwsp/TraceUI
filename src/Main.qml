@@ -19,6 +19,11 @@ Window {
         source: "qrc:/fonts/Hack-Regular.ttf"
     }
 
+    // ── Phase tracking ───────────────────────────────────────────────────────
+    // Phases: 0 = blank, 1 = terminal line, 2 = terminal expand,
+    //         3 = panels fade in, 4 = globe intro, 5 = done
+    property int animPhase: 0
+
     // 1. Dot grid background
     ShaderEffect {
         anchors.fill: parent
@@ -51,6 +56,7 @@ Window {
             panelId: "system"
             SplitView.preferredWidth: 500
             SplitView.minimumWidth: 300
+            opacity: 0
         }
 
         // Right Column (Network) - fills remaining space
@@ -59,6 +65,7 @@ Window {
             panelId: "network"
             SplitView.fillWidth: true
             SplitView.minimumWidth: 300
+            opacity: 0
         }
 
         // Terminal Column (Optional)
@@ -68,6 +75,8 @@ Window {
             visible: buildTerminal
             SplitView.preferredWidth: 500
             SplitView.minimumWidth: 300
+            clip: true
+            opacity: 0
         }
 
         // Restore layout state on startup
@@ -76,6 +85,125 @@ Window {
             if (savedMain) mainSplit.restoreState(savedMain)
             // Populate panels into their saved slots
             LayoutStore.restorePanelAssignments(panelRegistry)
+        }
+    }
+
+    // ── Terminal reveal line ─────────────────────────────────────────────────
+    // A thin horizontal line that appears where the terminal will be,
+    // then expands upward to reveal the terminal content.
+    Rectangle {
+        id: termRevealLine
+        visible: buildTerminal && animPhase >= 1 && animPhase <= 2
+        z: 500
+
+        // Position: bottom of the terminal column area
+        y: root.height - mainSplit.anchors.margins
+        x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
+        width: wrapperTerm.width
+        height: 1
+        color: Style.accentGold
+        opacity: 0
+
+        // Phase 1: Line appears
+        SequentialAnimation {
+            id: termLineAnim
+            NumberAnimation {
+                target: termRevealLine
+                property: "opacity"
+                from: 0; to: 1
+                duration: AnimConfig.termLineAppearDur
+            }
+            ScriptAction { script: root.animPhase = 2 }
+        }
+    }
+
+    // ── Terminal expand animation ────────────────────────────────────────────
+    NumberAnimation {
+        id: termExpandAnim
+        target: wrapperTerm
+        property: "opacity"
+        from: 0; to: 1
+        duration: AnimConfig.termExpandDur
+        easing.type: AnimConfig.termExpandEasing
+        onFinished: {
+            termRevealLine.visible = false
+            root.animPhase = 3
+        }
+    }
+
+    // ── Panel fade-in animations ─────────────────────────────────────────────
+    ParallelAnimation {
+        id: panelFadeAnim
+
+        NumberAnimation {
+            target: wrapperLeft
+            property: "opacity"
+            from: 0; to: 1
+            duration: AnimConfig.panelFadeDur
+            easing.type: AnimConfig.panelFadeEasing
+        }
+        NumberAnimation {
+            target: wrapperRight
+            property: "opacity"
+            from: 0; to: 1
+            duration: AnimConfig.panelFadeDur
+            easing.type: AnimConfig.panelFadeEasing
+        }
+
+        onFinished: root.animPhase = 4
+    }
+
+    // ── Globe intro trigger ──────────────────────────────────────────────────
+    property bool globeReady: false
+
+    Timer {
+        id: panelFadeTimer
+        interval: AnimConfig.panelFadeDelay
+        onTriggered: panelFadeAnim.start()
+    }
+
+    Timer {
+        id: globeStartTimer
+        interval: AnimConfig.globeStartDelay
+        onTriggered: {
+            root.globeReady = true
+            root.animPhase = 5
+        }
+    }
+
+    // ── Phase state machine ──────────────────────────────────────────────────
+    onAnimPhaseChanged: {
+        switch (animPhase) {
+        case 1:
+            termLineAnim.start()
+            break
+        case 2:
+            termExpandAnim.start()
+            break
+        case 3:
+            panelFadeTimer.start()
+            break
+        case 4:
+            globeStartTimer.start()
+            break
+        case 5:
+            // Animation complete
+            break
+        }
+    }
+
+    // ── Startup kick-off ─────────────────────────────────────────────────────
+    Timer {
+        id: startupTimer
+        interval: AnimConfig.startDelay
+        running: true
+        onTriggered: {
+            if (buildTerminal) {
+                root.animPhase = 1
+            } else {
+                // No terminal: skip straight to panel fade
+                root.animPhase = 3
+            }
         }
     }
 

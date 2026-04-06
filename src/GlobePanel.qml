@@ -28,7 +28,8 @@ Item {
         markerSize: 0.2
         pinHeadSize: 0.3
         showLabels: false
-        introDuration: 2000
+        introDuration: AnimConfig.globeIntroDur
+        startupDelay: AnimConfig.globeStart
         
         Component.onCompleted: {
             // Add some decorative points
