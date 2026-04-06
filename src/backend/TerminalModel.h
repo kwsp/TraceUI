@@ -27,7 +27,7 @@ signals:
     void backendChanged();
 
 private slots:
-    void onScreenUpdated();
+    void onScreenDamaged(int startRow, int endRow);
 
 private:
     TerminalBackend *m_backend = nullptr;

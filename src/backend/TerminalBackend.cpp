@@ -42,9 +42,11 @@ void FileDescriptor::reset(int fd) {
 
 // ── libvterm callbacks (C linkage style, static) ────────────────────
 
-static int screen_damage(VTermRect /*rect*/, void *user) {
+static int screen_damage(VTermRect rect, void *user) {
     auto *backend = static_cast<TerminalBackend *>(user);
-    emit backend->screenUpdated();
+    for (int r = rect.start_row; r < rect.end_row; ++r) {
+        backend->markRowDirty(r);
+    }
     return 1;
 }
 
@@ -82,6 +84,10 @@ TerminalBackend::TerminalBackend(QObject *parent)
     : QObject(parent)
 {
     setupVTerm();
+
+    m_renderTimer.setInterval(16); // ~60 FPS
+    m_renderTimer.setSingleShot(true);
+    connect(&m_renderTimer, &QTimer::timeout, this, &TerminalBackend::flushScreenUpdates);
 }
 
 TerminalBackend::~TerminalBackend() {
@@ -284,6 +290,30 @@ void TerminalBackend::resizePty() {
     ws.ws_row = static_cast<unsigned short>(m_rows);
     ws.ws_col = static_cast<unsigned short>(m_cols);
     ioctl(m_masterFd.get(), TIOCSWINSZ, &ws);
+}
+
+void TerminalBackend::markRowDirty(int row) {
+    if (row < 0 || row >= m_rows) return;
+    
+    if (m_dirtyStartRow == -1) {
+        m_dirtyStartRow = row;
+        m_dirtyEndRow = row;
+    } else {
+        m_dirtyStartRow = std::min(m_dirtyStartRow, row);
+        m_dirtyEndRow = std::max(m_dirtyEndRow, row);
+    }
+    
+    if (!m_renderTimer.isActive()) {
+        m_renderTimer.start();
+    }
+}
+
+void TerminalBackend::flushScreenUpdates() {
+    if (m_dirtyStartRow != -1 && m_dirtyEndRow != -1) {
+        emit screenDamaged(m_dirtyStartRow, m_dirtyEndRow);
+    }
+    m_dirtyStartRow = -1;
+    m_dirtyEndRow = -1;
 }
 
 void TerminalBackend::setCursorPos(int row, int col) {

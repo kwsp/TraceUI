@@ -72,7 +72,7 @@ private slots:
         model.setBackend(&backend);
 
         QSignalSpy spy(&model, &TerminalModel::dataChanged);
-        emit backend.screenUpdated();
+        emit backend.screenDamaged(0, 5);
         QCOMPARE(spy.count(), 1);
     }
 
@@ -86,10 +86,10 @@ private slots:
 
         // Signals from old backend should not trigger updates
         QSignalSpy spy(&model, &TerminalModel::dataChanged);
-        emit backend1.screenUpdated();
+        emit backend1.screenDamaged(0, 5);
         QCOMPARE(spy.count(), 0);
 
-        emit backend2.screenUpdated();
+        emit backend2.screenDamaged(0, 5);
         QCOMPARE(spy.count(), 1);
     }
 

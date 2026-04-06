@@ -62,6 +62,7 @@ public:
     Q_INVOKABLE void resize(int rows, int cols);
     void setCursorPos(int row, int col);
     void writeToPty(const QByteArray &data);
+    void markRowDirty(int row);
 
     Q_INVOKABLE void sendInput(const QString &input);
     Q_INVOKABLE void start(const QString &shell = QString());
@@ -73,10 +74,11 @@ signals:
     void rowsChanged();
     void colsChanged();
     void cursorMoved();
-    void screenUpdated();
+    void screenDamaged(int startRow, int endRow);
 
 private slots:
     void onPtyReadReady();
+    void flushScreenUpdates();
 
 private:
     void setupVTerm();
@@ -87,6 +89,10 @@ private:
     int m_cols = 80;
     int m_cursorRow = 0;
     int m_cursorCol = 0;
+
+    int m_dirtyStartRow = -1;
+    int m_dirtyEndRow = -1;
+    QTimer m_renderTimer;
 
     FileDescriptor m_masterFd;
     pid_t m_childPid = -1;

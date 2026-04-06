@@ -36,10 +36,14 @@
 
 ## 4. Remaining Work
 
+### Performance Improvements
+- [x] Targeted Dirty Tracking: Emit `dataChanged` only for actually modified lines instead of all lines.
+- [x] Render Throttling/Debouncing: Batch PTY reads and use a timer (e.g., 60fps) to flush damage to the UI to avoid high CPU usage.
+- [ ] Custom `QQuickItem` Renderer: (Long-term) Replace `ListView` and `RichText` with a C++ `QSGNode` based grid renderer.
+
 ### Per-Cell Color Support
-- [ ] Implement `ForegroundRole` / `BackgroundRole` in `TerminalModel::data()`.
-- [ ] Extract `VTermScreenCell` fg/bg colors and map to Qt colors.
-- [ ] Update delegate to use per-cell or per-run coloring (requires `Repeater` or custom render).
+- [x] Extract `VTermScreenCell` fg/bg colors and attributes (bold, italic, underline).
+- [x] Update delegate to use per-cell coloring via RichText spans.
 
 ### Scrollback Buffer
 - [ ] Implement `sb_pushline` / `sb_popline` callbacks in `TerminalBackend`.

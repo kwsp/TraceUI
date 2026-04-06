@@ -15,8 +15,8 @@ void TerminalModel::setBackend(TerminalBackend *backend) {
     m_backend = backend;
 
     if (m_backend) {
-        connect(m_backend, &TerminalBackend::screenUpdated,
-                this, &TerminalModel::onScreenUpdated);
+        connect(m_backend, &TerminalBackend::screenDamaged,
+                this, &TerminalModel::onScreenDamaged);
         connect(m_backend, &TerminalBackend::rowsChanged,
                 this, [this]() {
             beginResetModel();
@@ -51,9 +51,8 @@ QHash<int, QByteArray> TerminalModel::roleNames() const {
     };
 }
 
-void TerminalModel::onScreenUpdated() {
-    const auto count = rowCount();
-    if (count > 0) {
-        emit dataChanged(index(0), index(count - 1), { TextRole });
+void TerminalModel::onScreenDamaged(int startRow, int endRow) {
+    if (startRow >= 0 && endRow >= startRow && endRow < rowCount()) {
+        emit dataChanged(index(startRow), index(endRow), { TextRole });
     }
 }
