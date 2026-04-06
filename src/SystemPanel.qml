@@ -201,20 +201,34 @@ Item {
                     font.family: Style.fontData
                 }
                 Text { 
+                    id: cpuHeader
                     width: processList.colCpu
                     text: "CPU%" 
-                    color: Style.textLabel
+                    color: ProcessWatcher.sortByCpu ? Style.accentGold : Style.textLabel
                     font.pixelSize: Style.sizeLabel
                     font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ProcessWatcher.toggleSort()
+                    }
                 }
                 Text { 
+                    id: memHeader
                     width: processList.colMem
                     text: "MEM" 
-                    color: Style.textLabel
+                    color: ProcessWatcher.sortByCpu ? Style.textLabel : Style.accentGold
                     font.pixelSize: Style.sizeLabel
                     font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ProcessWatcher.toggleSort()
+                    }
                 }
             }
 
