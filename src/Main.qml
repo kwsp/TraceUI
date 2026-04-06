@@ -70,7 +70,7 @@ Window {
         anchors.bottom: parent.bottom
         anchors.margins: 24
         focus: true
-        active: buildTerminal
+        active: root.buildTerminal
         source: "terminal/TerminalPanel.qml"
     }
 }
