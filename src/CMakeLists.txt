@@ -19,6 +19,7 @@ set(TRACEUI_QML_FILES
   TilingPanelWrapper.qml
   SplitDivider.qml
   PanelFrame.qml
+  SectionBracket.qml
 )
 
 # TRACEUI_QML_FILES already defined above
