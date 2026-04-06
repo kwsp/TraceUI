@@ -4,7 +4,7 @@ import TraceUI
 Window {
     id: root
 
-    property bool buildTerminal: false
+    // buildTerminal is now a context property
 
     flags: Qt.FramelessWindowHint
     visibility: Window.FullScreen
@@ -70,15 +70,8 @@ Window {
         anchors.bottom: parent.bottom
         anchors.margins: 24
         focus: true
-        active: root.buildTerminal
-        // Absolute QRC path to the module component
-        source: root.buildTerminal ? "qrc:/qt/qml/TraceUI/Terminal/TerminalPanel.qml" : ""
-
-        onLoaded: console.log("Terminal panel loaded successfully")
-        onStatusChanged: {
-            if (status === Loader.Error) {
-                console.error("Terminal Loader Error:", source, errorString())
-            }
-        }
+        active: buildTerminal
+        // URI TraceUITerminal maps to folder TraceUITerminal in the QRC
+        source: buildTerminal ? "qrc:/qt/qml/TraceUITerminal/TerminalPanel.qml" : ""
     }
 }

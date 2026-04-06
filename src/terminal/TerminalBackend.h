@@ -7,6 +7,8 @@
 #include <memory>
 #include <vterm.h>
 
+#include <QtQml/qqmlregistration.h>
+
 #include "FileDescriptor.h"
 
 /// Custom deleter for VTerm, enabling use with std::unique_ptr.
@@ -20,6 +22,7 @@ using VTermPtr = std::unique_ptr<VTerm, VTermDeleter>;
 
 class TerminalBackend : public QObject {
     Q_OBJECT
+    QML_ELEMENT
     Q_PROPERTY(int rows READ rows WRITE setRows NOTIFY rowsChanged)
     Q_PROPERTY(int cols READ cols WRITE setCols NOTIFY colsChanged)
     Q_PROPERTY(int cursorRow READ cursorRow NOTIFY cursorMoved)

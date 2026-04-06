@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickWindow>
 #include <QtQml/qqml.h>
 
@@ -27,7 +28,7 @@
 Q_IMPORT_QML_PLUGIN(EncomGlobePlugin)
 
 #if BUILD_TERMINAL
-Q_IMPORT_QML_PLUGIN(TraceUI_TerminalPlugin)
+Q_IMPORT_QML_PLUGIN(TraceUITerminalPlugin)
 #endif
 
 int main(int argc, char *argv[]) {
@@ -60,8 +61,7 @@ int main(int argc, char *argv[]) {
   QQmlApplicationEngine engine;
   engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
   const bool buildTerminal = BUILD_TERMINAL != 0;
-  qDebug() << "Build Terminal property:" << buildTerminal;
-  engine.setInitialProperties(QVariantMap{{QStringLiteral("buildTerminal"), buildTerminal}});
+  engine.rootContext()->setContextProperty(QStringLiteral("buildTerminal"), buildTerminal);
   engine.loadFromModule(APP_MODULE_NAME, "Main");
 
   return QGuiApplication::exec();

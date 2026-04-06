@@ -1,5 +1,6 @@
 import QtQuick
 import TraceUI
+import TraceUITerminal
 
 FocusScope {
     id: root
