@@ -75,8 +75,8 @@ void NetworkMonitorMacOS::startPing() {
         return;
 
     m_pingInFlight = true;
-    // Single ping with 1 second timeout
-    m_pingProcess->start("ping", {"-c", "1", "-W", "1", "1.1.1.1"});
+    // Single ping with 2 second timeout (-t on macOS, -W is waittime in ms)
+    m_pingProcess->start("ping", {"-c", "1", "-t", "2", "1.1.1.1"});
 }
 
 void NetworkMonitorMacOS::onPingFinished(int exitCode, QProcess::ExitStatus /*status*/) {
