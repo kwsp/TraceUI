@@ -82,6 +82,13 @@ Window {
                 anchors.fill: parent
                 terminalActive: buildTerminal
 
+                // Placeholder for new GPU renderer test
+                TerminalRenderer {
+                    anchors.fill: parent
+                    backend: terminalContainer.terminal ? terminalContainer.terminal.backend : null
+                    visible: false // Keep it hidden for now so it doesn't block the real terminal
+                }
+
                 onRevealComplete: root.animPhase = 2
             }
         }

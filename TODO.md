@@ -82,9 +82,17 @@ Refactor the entire UI into the high-density HUD layout (System vs Network colum
     - [x] Globe intro animation starts after panels are visible.
     - [x] Uses Globe's built-in `startupDelay` property.
 
-## Phase 3: Advanced Terminal Features (Future)
-- [ ] Scrollback buffer ring.
-- [ ] Alt-screen support (vim/top).
+## Phase 3: Advanced Terminal Features (Current)
+- [ ] **Scrollback Buffer**:
+    - [ ] Implement ring buffer in `TerminalBackend` using `sb_pushline` / `sb_popline` callbacks.
+- [ ] **Alt-Screen Support**:
+    - [ ] Handle alternate screen buffer transitions for TUI apps (vim/top).
+- [ ] **Native GPU Rendering (RHI)**:
+    - [ ] **Terminal Renderer Component**: Create `TerminalRenderer` as a `QQuickItem` subclass.
+    - [ ] **Glyph Atlas**: Implement a texture atlas for monospace glyphs (pre-rendered via `QRawFont` or `FreeType`).
+    - [ ] **Grid Geometry**: Use `QSGGeometryNode` to manage a grid of textured quads.
+    - [ ] **Cell Data Buffer**: Map `libvterm` screen state directly to a GPU vertex buffer (Cell attributes: UVs, FG/BG colors).
+    - [ ] **RHI Shaders**: Implement vertex/fragment shaders for high-performance cell compositing (bypass QML RichText).
 - [ ] Windows ConPTY support.
 
 ## Phase 4: Real Backend Data
