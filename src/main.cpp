@@ -59,7 +59,9 @@ int main(int argc, char *argv[]) {
 
   QQmlApplicationEngine engine;
   engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
-  engine.setInitialProperties(QVariantMap{{QStringLiteral("buildTerminal"), BUILD_TERMINAL != 0}});
+  const bool buildTerminal = BUILD_TERMINAL != 0;
+  qDebug() << "Build Terminal property:" << buildTerminal;
+  engine.setInitialProperties(QVariantMap{{QStringLiteral("buildTerminal"), buildTerminal}});
   engine.loadFromModule(APP_MODULE_NAME, "Main");
 
   return QGuiApplication::exec();

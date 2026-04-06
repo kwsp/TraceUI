@@ -71,7 +71,14 @@ Window {
         anchors.margins: 24
         focus: true
         active: root.buildTerminal
-        // URI TraceUI.Terminal maps to folder Terminal relative to URI TraceUI
-        source: root.buildTerminal ? "Terminal/TerminalPanel.qml" : ""
+        // Absolute QRC path to the module component
+        source: root.buildTerminal ? "qrc:/qt/qml/TraceUI/Terminal/TerminalPanel.qml" : ""
+
+        onLoaded: console.log("Terminal panel loaded successfully")
+        onStatusChanged: {
+            if (status === Loader.Error) {
+                console.error("Terminal Loader Error:", source, errorString())
+            }
+        }
     }
 }
