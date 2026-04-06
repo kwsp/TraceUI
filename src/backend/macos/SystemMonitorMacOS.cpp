@@ -3,6 +3,7 @@
 #include <IOKit/ps/IOPSKeys.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <cstdlib>
+#include <cstring>
 #include <mach/mach_host.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
@@ -13,7 +14,24 @@
 
 namespace {
 
-#pragma pack(push, 1)
+// The SMC user-client struct must be exactly 80 bytes.
+// Layout from osx-cpu-temp / smcFanControl open-source projects.
+struct SMCVersion {
+    unsigned char major;
+    unsigned char minor;
+    unsigned char build;
+    unsigned char reserved;
+    unsigned short release;
+};
+
+struct SMCPLimitData {
+    uint16_t version;
+    uint16_t length;
+    uint32_t cpuPLimit;
+    uint32_t gpuPLimit;
+    uint32_t memPLimit;
+};
+
 struct SMCKeyInfoData {
     uint32_t dataSize;
     uint32_t dataType;
@@ -22,6 +40,8 @@ struct SMCKeyInfoData {
 
 struct SMCKeyData {
     uint32_t key;
+    SMCVersion vers;
+    SMCPLimitData pLimitData;
     SMCKeyInfoData keyInfo;
     uint8_t result;
     uint8_t status;
@@ -29,7 +49,8 @@ struct SMCKeyData {
     uint32_t data32;
     uint8_t bytes[32];
 };
-#pragma pack(pop)
+
+static_assert(sizeof(SMCKeyData) == 80, "SMCKeyData must be 80 bytes");
 
 static constexpr uint8_t kSMCGetKeyInfo = 9;
 static constexpr uint8_t kSMCReadKey = 5;
@@ -49,6 +70,10 @@ static io_connect_t openSMC() {
     return conn;
 }
 
+// FourCC constants for SMC data types
+static constexpr uint32_t kSMCTypeSP78 = ('s' << 24) | ('p' << 16) | ('7' << 8) | '8';
+static constexpr uint32_t kSMCTypeFLT  = ('f' << 24) | ('l' << 16) | ('t' << 8) | ' ';
+
 static double readSMCTemp(io_connect_t conn, const char key[4]) {
     if (conn == IO_OBJECT_NULL)
         return -1.0;
@@ -63,6 +88,9 @@ static double readSMCTemp(io_connect_t conn, const char key[4]) {
     if (IOConnectCallStructMethod(conn, 2, &in, sizeof(in), &out, &outSize) != KERN_SUCCESS)
         return -1.0;
 
+    if (out.keyInfo.dataSize == 0)
+        return -1.0; // key doesn't exist on this hardware
+
     // Step 2: Read the value using the key info from step 1
     in.keyInfo = out.keyInfo;
     in.data8 = kSMCReadKey;
@@ -70,9 +98,20 @@ static double readSMCTemp(io_connect_t conn, const char key[4]) {
     if (IOConnectCallStructMethod(conn, 2, &in, sizeof(in), &out, &outSize) != KERN_SUCCESS)
         return -1.0;
 
-    // Decode sp78 fixed-point: signed 7.8 (upper byte = integer, lower = fraction / 256)
-    auto raw = static_cast<int16_t>((out.bytes[0] << 8) | out.bytes[1]);
-    return raw / 256.0;
+    // Decode based on data type
+    uint32_t dataType = out.keyInfo.dataType;
+    if (dataType == kSMCTypeFLT && out.keyInfo.dataSize == 4) {
+        // IEEE 754 float (Apple Silicon)
+        float val;
+        memcpy(&val, out.bytes, sizeof(float));
+        return static_cast<double>(val);
+    }
+    if (dataType == kSMCTypeSP78 && out.keyInfo.dataSize >= 2) {
+        // Signed 7.8 fixed-point (Intel Macs)
+        auto raw = static_cast<int16_t>((out.bytes[0] << 8) | out.bytes[1]);
+        return raw / 256.0;
+    }
+    return -1.0; // unknown type
 }
 
 } // namespace
@@ -243,10 +282,10 @@ void SystemMonitorMacOS::updateTemperature() {
         return;
     }
 
-    // Common CPU temperature keys in priority order:
-    // TC0P = CPU proximity (Intel), TC0D = CPU die (Intel),
-    // Tp09/Tp01 = Apple Silicon P/E cluster temperatures.
-    static const char *keys[] = {"TC0P", "TC0D", "Tp09", "Tp01"};
+    // CPU temperature keys in priority order:
+    // Apple Silicon: Tp09 = P-cluster, Tp01 = E-cluster, Tp0D = die
+    // Intel: TC0P = proximity, TC0D = die
+    static const char *keys[] = {"Tp09", "Tp0D", "Tp01", "TC0P", "TC0D"};
     for (auto *key : keys) {
         double temp = readSMCTemp(smcConn, key);
         if (temp > 0.0 && temp < 130.0) {

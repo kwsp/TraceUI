@@ -17,7 +17,7 @@ Item {
         anchors.margins: 10
         
         dayLength: 60000  // slow rotation
-        scale: 1.1
+        scale: 1.3
         viewAngle: 0.2
         
         baseColor: Style.accentGold
