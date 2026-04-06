@@ -33,10 +33,16 @@
 - [x] Visual cursor (blinking, positioned relative to scroll offset).
 - [x] Terminal resizing when window dimensions change (coalesced via `resize()`).
 - [x] Click-to-focus with `MouseArea`.
+- [x] Separate the Terminal into its own QML Module (`TraceUI.Terminal`).
 
-## 4. Remaining Work
+## 4. Remaining Work (Making Terminal a truly reusable component)
 
-### Performance Improvements
+### Refactor for Portability
+- [ ] Remove "Global" Dependencies: Refactor `TerminalPanel.qml` to use public properties for colors and fonts instead of `Style.qml`.
+- [ ] Abstract PTY Logic: Create a `TerminalProcess` interface and implement a Windows version (using `ConPTY`) to support all Qt platforms.
+- [ ] Self-Contained Resources: Bundle necessary fonts (like `Hack`) within the module or provide a clean API to set them.
+
+### Per-Cell Color Support
 - [x] Targeted Dirty Tracking: Emit `dataChanged` only for actually modified lines instead of all lines.
 - [x] Render Throttling/Debouncing: Batch PTY reads and use a timer (e.g., 60fps) to flush damage to the UI to avoid high CPU usage.
 - [ ] Custom `QQuickItem` Renderer: (Long-term) Replace `ListView` and `RichText` with a C++ `QSGNode` based grid renderer.

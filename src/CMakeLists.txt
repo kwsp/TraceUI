@@ -16,9 +16,7 @@ set(TRACEUI_QML_FILES
   GlobePanel.qml
 )
 
-if(BUILD_TERMINAL)
-  list(APPEND TRACEUI_QML_FILES terminal/TerminalPanel.qml)
-endif()
+# TRACEUI_QML_FILES already defined above
 
 qt_add_qml_module(${PROJECT_NAME}
   URI ${PROJECT_NAME}
@@ -88,7 +86,6 @@ configure_file(config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}  # for config.h
   ${CMAKE_CURRENT_SOURCE_DIR}/backend  # for qml to register C++ types
-  ${CMAKE_CURRENT_SOURCE_DIR}/terminal
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -101,7 +98,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 if(BUILD_TERMINAL)
-  target_link_libraries(${PROJECT_NAME} PRIVATE TraceUITerminal)
+  target_link_libraries(${PROJECT_NAME} PRIVATE TraceUITerminal TraceUITerminalplugin)
 endif()
 
 # Generate .qmlls.ini

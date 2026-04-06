@@ -1,10 +1,16 @@
-add_library(TraceUITerminal STATIC
-    TerminalBackend.h
-    TerminalBackend.cpp
-    TerminalModel.h
-    TerminalModel.cpp
-    FileDescriptor.h
-    FileDescriptor.cpp
+qt6_add_qml_module(TraceUITerminal
+    STATIC
+    URI TraceUI.Terminal
+    VERSION 1.0
+    QML_FILES
+        TerminalPanel.qml
+    SOURCES
+        TerminalBackend.h
+        TerminalBackend.cpp
+        TerminalModel.h
+        TerminalModel.cpp
+        FileDescriptor.h
+        FileDescriptor.cpp
 )
 
 target_include_directories(TraceUITerminal PUBLIC
@@ -18,5 +24,3 @@ target_link_libraries(TraceUITerminal PUBLIC
     Qt6::Qml
     vterm
 )
-
-set_property(TARGET TraceUITerminal PROPERTY AUTOMOC ON)

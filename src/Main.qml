@@ -71,6 +71,7 @@ Window {
         anchors.margins: 24
         focus: true
         active: root.buildTerminal
-        source: "terminal/TerminalPanel.qml"
+        // Using relative path to the module component
+        source: root.buildTerminal ? "terminal/TerminalPanel.qml" : ""
     }
 }

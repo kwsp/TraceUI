@@ -17,26 +17,11 @@ add_library(TraceUIBackend STATIC
 )
 
 if(BUILD_TERMINAL)
-    target_sources(TraceUIBackend PRIVATE
-        ../src/terminal/TerminalBackend.cpp
-        ../src/terminal/TerminalModel.cpp
-        ../src/terminal/FileDescriptor.cpp
-    )
+    target_link_libraries(TraceUIBackend PRIVATE TraceUITerminal)
 endif()
 
-target_include_directories(TraceUIBackend PUBLIC 
-    ../src
-)
-
-if(BUILD_TERMINAL)
-    target_include_directories(TraceUIBackend PUBLIC ../src/terminal)
-endif()
-
+target_include_directories(TraceUIBackend PUBLIC ../src)
 target_link_libraries(TraceUIBackend PRIVATE Qt6::Core Qt6::Gui Qt6::Qml)
-
-if(BUILD_TERMINAL)
-    target_link_libraries(TraceUIBackend PRIVATE vterm)
-endif()
 
 if(APPLE)
     target_link_libraries(TraceUIBackend PRIVATE "-framework CoreFoundation")
@@ -82,8 +67,8 @@ add_test(NAME test_ui COMMAND test_ui)
 # Terminal Test
 if(BUILD_TERMINAL)
     qt_add_executable(test_Terminal test_Terminal.cpp)
-    target_include_directories(test_Terminal PRIVATE ../src ../src/terminal)
-    target_link_libraries(test_Terminal PRIVATE Qt6::Core Qt6::Test TraceUIBackend vterm)
+    target_include_directories(test_Terminal PRIVATE ../src)
+    target_link_libraries(test_Terminal PRIVATE Qt6::Core Qt6::Test TraceUIBackend TraceUITerminal)
     set_property(TARGET test_Terminal PROPERTY AUTOMOC ON)
     add_test(NAME test_Terminal COMMAND test_Terminal)
 endif()

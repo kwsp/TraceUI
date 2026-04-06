@@ -26,6 +26,10 @@
 // Import the static EncomGlobe QML plugin
 Q_IMPORT_QML_PLUGIN(EncomGlobePlugin)
 
+#if BUILD_TERMINAL
+Q_IMPORT_QML_PLUGIN(TraceUI_TerminalPlugin)
+#endif
+
 int main(int argc, char *argv[]) {
   QQuickWindow::setDefaultAlphaBuffer(true);
 
@@ -52,11 +56,6 @@ int main(int argc, char *argv[]) {
   qmlRegisterType<NetworkHistoryProvider>("TraceUI", 0, 1,
                                           "NetworkHistoryProvider");
   qmlRegisterType<CpuHistoryProvider>("TraceUI", 0, 1, "CpuHistoryProvider");
-
-#if BUILD_TERMINAL
-  qmlRegisterType<TerminalBackend>("TraceUI", 0, 1, "TerminalBackend");
-  qmlRegisterType<TerminalModel>("TraceUI", 0, 1, "TerminalModel");
-#endif
 
   QQmlApplicationEngine engine;
   engine.setInitialProperties(QVariantMap{{QStringLiteral("buildTerminal"), BUILD_TERMINAL != 0}});
