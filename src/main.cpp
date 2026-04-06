@@ -5,8 +5,12 @@
 
 #include "backend/CpuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
+#include "config.h"
+
+#if BUILD_TERMINAL
 #include "terminal/TerminalBackend.h"
 #include "terminal/TerminalModel.h"
+#endif
 
 #ifdef Q_OS_MACOS
 #include "backend/macos/NetworkMonitorMacOS.h"
@@ -48,10 +52,14 @@ int main(int argc, char *argv[]) {
   qmlRegisterType<NetworkHistoryProvider>("TraceUI", 0, 1,
                                           "NetworkHistoryProvider");
   qmlRegisterType<CpuHistoryProvider>("TraceUI", 0, 1, "CpuHistoryProvider");
+
+#if BUILD_TERMINAL
   qmlRegisterType<TerminalBackend>("TraceUI", 0, 1, "TerminalBackend");
   qmlRegisterType<TerminalModel>("TraceUI", 0, 1, "TerminalModel");
+#endif
 
   QQmlApplicationEngine engine;
+  engine.setInitialProperties(QVariantMap{{QStringLiteral("buildTerminal"), BUILD_TERMINAL != 0}});
   engine.loadFromModule(APP_MODULE_NAME, "Main");
 
   return QGuiApplication::exec();

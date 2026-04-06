@@ -7,17 +7,23 @@ qt_add_executable(${PROJECT_NAME}
 
 set_source_files_properties(Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
+set(TRACEUI_QML_FILES
+  Style.qml
+  Main.qml
+  SystemPanel.qml
+  ProcessPanel.qml
+  NetworkPanel.qml
+  GlobePanel.qml
+)
+
+if(BUILD_TERMINAL)
+  list(APPEND TRACEUI_QML_FILES TerminalPanel.qml)
+endif()
+
 qt_add_qml_module(${PROJECT_NAME}
   URI ${PROJECT_NAME}
   VERSION ${CMAKE_PROJECT_VERSION}
-  QML_FILES
-    Style.qml
-    Main.qml
-    SystemPanel.qml
-    ProcessPanel.qml
-    NetworkPanel.qml
-    GlobePanel.qml
-    TerminalPanel.qml
+  QML_FILES ${TRACEUI_QML_FILES}
   SOURCES
     backend/SystemMonitor.h
     backend/SystemMonitor.cpp
@@ -33,13 +39,11 @@ qt_add_qml_module(${PROJECT_NAME}
     backend/CpuHistoryProvider.cpp
     backend/ProcessListModel.h
     backend/ProcessListModel.cpp
-    terminal/TerminalBackend.h
-    terminal/TerminalBackend.cpp
-    terminal/TerminalModel.h
-    terminal/TerminalModel.cpp
-    terminal/FileDescriptor.h
-    terminal/FileDescriptor.cpp
 )
+
+if(BUILD_TERMINAL)
+  add_subdirectory(terminal)
+endif()
 
 if(APPLE)
   target_sources(${PROJECT_NAME} PRIVATE
@@ -94,8 +98,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt6::Quick
   EncomGlobe
   EncomGlobeplugin
-  vterm
 )
+
+if(BUILD_TERMINAL)
+  target_link_libraries(${PROJECT_NAME} PRIVATE TraceUITerminal)
+endif()
 
 # Generate .qmlls.ini
 find_program(_qmake NAMES qmake6 qmake HINTS "${Qt6_DIR}/../../../bin")

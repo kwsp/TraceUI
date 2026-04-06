@@ -14,15 +14,30 @@ add_library(TraceUIBackend STATIC
     ../src/backend/macos/ProcessWatcherMacOS.cpp
     ../src/backend/NetworkMonitor.cpp
     ../src/backend/macos/NetworkMonitorMacOS.cpp
-    ../src/terminal/TerminalBackend.cpp
-    ../src/terminal/TerminalModel.cpp
-    ../src/terminal/FileDescriptor.cpp
 )
+
+if(BUILD_TERMINAL)
+    target_sources(TraceUIBackend PRIVATE
+        ../src/terminal/TerminalBackend.cpp
+        ../src/terminal/TerminalModel.cpp
+        ../src/terminal/FileDescriptor.cpp
+    )
+endif()
+
 target_include_directories(TraceUIBackend PUBLIC 
     ../src
-    ../src/terminal
 )
-target_link_libraries(TraceUIBackend PRIVATE Qt6::Core Qt6::Gui Qt6::Qml vterm)
+
+if(BUILD_TERMINAL)
+    target_include_directories(TraceUIBackend PUBLIC ../src/terminal)
+endif()
+
+target_link_libraries(TraceUIBackend PRIVATE Qt6::Core Qt6::Gui Qt6::Qml)
+
+if(BUILD_TERMINAL)
+    target_link_libraries(TraceUIBackend PRIVATE vterm)
+endif()
+
 if(APPLE)
     target_link_libraries(TraceUIBackend PRIVATE "-framework CoreFoundation")
 endif()
@@ -65,8 +80,10 @@ target_compile_definitions(test_ui PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURREN
 add_test(NAME test_ui COMMAND test_ui)
 
 # Terminal Test
-qt_add_executable(test_Terminal test_Terminal.cpp)
-target_include_directories(test_Terminal PRIVATE ../src ../src/terminal)
-target_link_libraries(test_Terminal PRIVATE Qt6::Core Qt6::Test TraceUIBackend vterm)
-set_property(TARGET test_Terminal PROPERTY AUTOMOC ON)
-add_test(NAME test_Terminal COMMAND test_Terminal)
+if(BUILD_TERMINAL)
+    qt_add_executable(test_Terminal test_Terminal.cpp)
+    target_include_directories(test_Terminal PRIVATE ../src ../src/terminal)
+    target_link_libraries(test_Terminal PRIVATE Qt6::Core Qt6::Test TraceUIBackend vterm)
+    set_property(TARGET test_Terminal PROPERTY AUTOMOC ON)
+    add_test(NAME test_Terminal COMMAND test_Terminal)
+endif()

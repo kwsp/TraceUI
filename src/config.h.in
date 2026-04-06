@@ -1,2 +1,3 @@
 #pragma once
 #define APP_MODULE_NAME "@PROJECT_NAME@"
+#cmakedefine01 BUILD_TERMINAL

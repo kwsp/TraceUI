@@ -4,6 +4,8 @@ import TraceUI
 Window {
     id: root
 
+    property bool buildTerminal: false
+
     flags: Qt.FramelessWindowHint
     visibility: Window.FullScreen
     color: Style.backgroundColor
@@ -60,13 +62,15 @@ Window {
     }
 
     // Terminal Panel (Right 2/3)
-    TerminalPanel {
-        id: terminalPanel
+    Loader {
+        id: terminalLoader
         anchors.left: globePanel.right
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.margins: 24
         focus: true
+        active: buildTerminal
+        source: "TerminalPanel.qml"
     }
 }
