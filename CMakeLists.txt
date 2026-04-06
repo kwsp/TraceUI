@@ -14,5 +14,6 @@ project(TraceUI
 enable_testing()
 
 add_subdirectory(external/encom-globe)
+add_subdirectory(external/libvterm)
 add_subdirectory(src)
 add_subdirectory(tests)

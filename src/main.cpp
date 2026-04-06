@@ -5,6 +5,8 @@
 
 #include "backend/CpuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
+#include "backend/TerminalBackend.h"
+#include "backend/TerminalModel.h"
 
 #ifdef Q_OS_MACOS
 #include "backend/macos/NetworkMonitorMacOS.h"
@@ -46,6 +48,8 @@ int main(int argc, char *argv[]) {
   qmlRegisterType<NetworkHistoryProvider>("TraceUI", 0, 1,
                                           "NetworkHistoryProvider");
   qmlRegisterType<CpuHistoryProvider>("TraceUI", 0, 1, "CpuHistoryProvider");
+  qmlRegisterType<TerminalBackend>("TraceUI", 0, 1, "TerminalBackend");
+  qmlRegisterType<TerminalModel>("TraceUI", 0, 1, "TerminalModel");
 
   QQmlApplicationEngine engine;
   engine.loadFromModule(APP_MODULE_NAME, "Main");

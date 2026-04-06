@@ -17,6 +17,7 @@ qt_add_qml_module(${PROJECT_NAME}
     ProcessPanel.qml
     NetworkPanel.qml
     GlobePanel.qml
+    TerminalPanel.qml
   SOURCES
     backend/SystemMonitor.h
     backend/SystemMonitor.cpp
@@ -32,6 +33,10 @@ qt_add_qml_module(${PROJECT_NAME}
     backend/CpuHistoryProvider.cpp
     backend/ProcessListModel.h
     backend/ProcessListModel.cpp
+    backend/TerminalBackend.h
+    backend/TerminalBackend.cpp
+    backend/TerminalModel.h
+    backend/TerminalModel.cpp
 )
 
 if(APPLE)
@@ -77,6 +82,7 @@ configure_file(config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}  # for config.h
   ${CMAKE_CURRENT_SOURCE_DIR}/backend  # for qml to register C++ types
+  ${CMAKE_SOURCE_DIR}/external/libvterm/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -86,6 +92,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt6::Quick
   EncomGlobe
   EncomGlobeplugin
+  vterm
 )
 
 # Generate .qmlls.ini

@@ -14,9 +14,14 @@ add_library(TraceUIBackend STATIC
     ../src/backend/macos/ProcessWatcherMacOS.cpp
     ../src/backend/NetworkMonitor.cpp
     ../src/backend/macos/NetworkMonitorMacOS.cpp
+    ../src/backend/TerminalBackend.cpp
+    ../src/backend/TerminalModel.cpp
 )
-target_include_directories(TraceUIBackend PUBLIC ../src)
-target_link_libraries(TraceUIBackend PRIVATE Qt6::Core Qt6::Qml)
+target_include_directories(TraceUIBackend PUBLIC 
+    ../src
+    ../external/libvterm/include
+)
+target_link_libraries(TraceUIBackend PRIVATE Qt6::Core Qt6::Gui Qt6::Qml vterm)
 if(APPLE)
     target_link_libraries(TraceUIBackend PRIVATE "-framework CoreFoundation")
 endif()
@@ -57,3 +62,10 @@ target_link_libraries(test_ui PRIVATE Qt6::Core Qt6::Qml Qt6::QuickTest TraceUIB
 set_property(TARGET test_ui PROPERTY AUTOMOC ON)
 target_compile_definitions(test_ui PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
 add_test(NAME test_ui COMMAND test_ui)
+
+# Terminal Test
+qt_add_executable(test_Terminal test_Terminal.cpp)
+target_include_directories(test_Terminal PRIVATE ../src ../external/libvterm/include)
+target_link_libraries(test_Terminal PRIVATE Qt6::Core Qt6::Test TraceUIBackend vterm)
+set_property(TARGET test_Terminal PROPERTY AUTOMOC ON)
+add_test(NAME test_Terminal COMMAND test_Terminal)
