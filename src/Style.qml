@@ -11,7 +11,7 @@ QtObject {
     readonly property color textPrimary:      "#e8dfc0"
     readonly property color textDim:          Qt.rgba(0.91, 0.87, 0.75, 0.40)
     readonly property color textLabel:        "#7a6e50"
-    readonly property color accentGold:       "#c9a84c"
+    readonly property color accentGold:       "#ffcc33"
     readonly property color accentSilver:     "#a8b0b8"
     readonly property color accentError:      "#8a3030"
     readonly property color foregroundColor:  "#e8dfc0"
