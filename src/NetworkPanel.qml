@@ -90,16 +90,22 @@ Item {
         spacing: 5
 
         Text {
-            text: "GLOBAL NETWORK MAP / ENDPOINT: 41.8781, -87.6298"
+            text: "GLOBAL NETWORK MAP"
             color: Style.textLabel
             font.family: Style.fontData
             font.pixelSize: Style.sizeHeader
             font.bold: true
         }
+        Text {
+            text: "ENDPOINT: 41.8781, -87.6298"
+            color: Style.textPrimary
+            font.family: Style.fontData
+            font.pixelSize: Style.sizeData
+        }
 
         GlobePanel {
             width: parent.width
-            height: parent.height - 25 // Account for header text and spacing
+            height: parent.height - 40 // Account for header text and spacing
         }
     }
 
