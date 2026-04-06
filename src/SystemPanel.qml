@@ -165,12 +165,24 @@ Item {
         anchors.margins: 10
         spacing: 5
 
-        Text {
-            text: "USING " + (SystemMonitor.ramUsedMB/1024).toFixed(1) + " OUT OF " + (SystemMonitor.ramTotalMB/1024).toFixed(1) + " GIB"
-            color: Style.textLabel
-            font.family: Style.fontData
-            font.pixelSize: Style.sizeHeader
-            font.bold: true
+        Row {
+            width: parent.width
+            Text {
+                id: memoryUsageLabel
+                text: "MEMORY USAGE"
+                color: Style.textLabel
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
+            }
+            Text {
+                width: parent.width - memoryUsageLabel.width
+                horizontalAlignment: Text.AlignRight
+                text:  (SystemMonitor.ramUsedMB/1024).toFixed(1) + " / " + (SystemMonitor.ramTotalMB/1024).toFixed(1) + " GIB"
+                color: Style.textPrimary
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeData
+            }
         }
 
         ShaderEffect {
