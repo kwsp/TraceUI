@@ -37,6 +37,8 @@ qt_add_qml_module(${PROJECT_NAME}
     backend/TerminalBackend.cpp
     backend/TerminalModel.h
     backend/TerminalModel.cpp
+    backend/FileDescriptor.h
+    backend/FileDescriptor.cpp
 )
 
 if(APPLE)

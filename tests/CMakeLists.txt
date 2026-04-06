@@ -16,6 +16,7 @@ add_library(TraceUIBackend STATIC
     ../src/backend/macos/NetworkMonitorMacOS.cpp
     ../src/backend/TerminalBackend.cpp
     ../src/backend/TerminalModel.cpp
+    ../src/backend/FileDescriptor.cpp
 )
 target_include_directories(TraceUIBackend PUBLIC 
     ../src
