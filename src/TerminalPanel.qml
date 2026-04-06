@@ -53,6 +53,7 @@ FocusScope {
                 width: terminalView.width
                 height: 18
                 text: model.text
+                textFormat: Text.RichText
                 color: Style.textPrimary
                 font.family: Style.fontData
                 font.pixelSize: 14

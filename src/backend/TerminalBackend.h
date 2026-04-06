@@ -67,6 +67,7 @@ public:
     Q_INVOKABLE void start(const QString &shell = QString());
 
     [[nodiscard]] QString getLineText(int row) const;
+    [[nodiscard]] QString getLineHtml(int row) const;
 
 signals:
     void rowsChanged();

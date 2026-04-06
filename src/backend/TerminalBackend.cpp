@@ -108,6 +108,44 @@ void TerminalBackend::cleanupChild() {
     }
 }
 
+// Helper: convert a VTermColor to an RGB hex string like "#rrggbb".
+// Uses the screen's palette to resolve indexed colors.
+static QString vtermColorToHex(const VTermScreen *screen, VTermColor col) {
+    if (VTERM_COLOR_IS_INDEXED(&col)) {
+        vterm_screen_convert_color_to_rgb(screen, &col);
+    }
+    return QStringLiteral("#%1%2%3")
+        .arg(col.rgb.red,   2, 16, QLatin1Char('0'))
+        .arg(col.rgb.green, 2, 16, QLatin1Char('0'))
+        .arg(col.rgb.blue,  2, 16, QLatin1Char('0'));
+}
+
+// Helper: append a QChar for a uint32_t codepoint.
+static void appendCodepoint(QString &out, uint32_t c) {
+    if (QChar::requiresSurrogates(c)) {
+        out.append(QChar::highSurrogate(c));
+        out.append(QChar::lowSurrogate(c));
+    } else {
+        out.append(QChar(static_cast<char16_t>(c)));
+    }
+}
+
+// Helper: extract the character(s) from a cell into a string, HTML-escaped.
+static void appendCellText(QString &out, const VTermScreenCell &cell) {
+    if (cell.chars[0] == 0) {
+        out.append(u' ');
+        return;
+    }
+    for (int i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i]; ++i) {
+        const auto c = cell.chars[i];
+        // HTML-escape special characters
+        if (c == '<')       out.append(QStringLiteral("&lt;"));
+        else if (c == '>')  out.append(QStringLiteral("&gt;"));
+        else if (c == '&')  out.append(QStringLiteral("&amp;"));
+        else                appendCodepoint(out, c);
+    }
+}
+
 void TerminalBackend::setupVTerm() {
     m_vt.reset(vterm_new(m_rows, m_cols));
     vterm_set_utf8(m_vt.get(), 1);
@@ -115,6 +153,13 @@ void TerminalBackend::setupVTerm() {
 
     m_vts = vterm_obtain_screen(m_vt.get());
     vterm_screen_set_callbacks(m_vts, &screen_callbacks, this);
+
+    // Set default fg/bg to match Neo-Kitsch theme
+    VTermColor defaultFg, defaultBg;
+    vterm_color_rgb(&defaultFg, 0xe8, 0xdf, 0xc0);  // Style.textPrimary
+    vterm_color_rgb(&defaultBg, 0x0d, 0x0b, 0x0e);  // Style.backgroundColor
+    vterm_screen_set_default_colors(m_vts, &defaultFg, &defaultBg);
+
     vterm_screen_reset(m_vts, 1);
 }
 
@@ -263,13 +308,7 @@ QString TerminalBackend::getLineText(int row) const {
             line.append(u' ');
         } else {
             for (int i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i]; ++i) {
-                const auto c = cell.chars[i];
-                if (QChar::requiresSurrogates(c)) {
-                    line.append(QChar::highSurrogate(c));
-                    line.append(QChar::lowSurrogate(c));
-                } else {
-                    line.append(QChar(static_cast<char16_t>(c)));
-                }
+                appendCodepoint(line, cell.chars[i]);
             }
         }
 
@@ -280,4 +319,79 @@ QString TerminalBackend::getLineText(int row) const {
     }
 
     return line;
+}
+
+QString TerminalBackend::getLineHtml(int row) const {
+    if (row < 0 || row >= m_rows) return {};
+
+    // Pre-allocate generously: typical line ~cols chars + markup overhead
+    QString html;
+    html.reserve(m_cols * 6);
+
+    // Track current span attributes to batch consecutive cells
+    QString curFg, curBg;
+    bool curBold = false;
+    bool curItalic = false;
+    bool curUnderline = false;
+    bool spanOpen = false;
+
+    auto closeSpan = [&]() {
+        if (spanOpen) {
+            html.append(QStringLiteral("</span>"));
+            spanOpen = false;
+        }
+    };
+
+    for (int col = 0; col < m_cols; ++col) {
+        VTermScreenCell cell;
+        const VTermPos pos = { row, col };
+        vterm_screen_get_cell(m_vts, pos, &cell);
+
+        // Resolve colors
+        const bool isDefaultFg = VTERM_COLOR_IS_DEFAULT_FG(&cell.fg);
+        const bool isDefaultBg = VTERM_COLOR_IS_DEFAULT_BG(&cell.bg);
+        const QString fg = isDefaultFg ? QString() : vtermColorToHex(m_vts, cell.fg);
+        const QString bg = isDefaultBg ? QString() : vtermColorToHex(m_vts, cell.bg);
+        const bool bold = cell.attrs.bold;
+        const bool italic = cell.attrs.italic;
+        const bool underline = cell.attrs.underline != 0;
+
+        // Start a new span if attributes changed
+        if (fg != curFg || bg != curBg || bold != curBold ||
+            italic != curItalic || underline != curUnderline) {
+            closeSpan();
+            curFg = fg;
+            curBg = bg;
+            curBold = bold;
+            curItalic = italic;
+            curUnderline = underline;
+
+            // Only emit a span if we have non-default styling
+            if (!curFg.isEmpty() || !curBg.isEmpty() || curBold || curItalic || curUnderline) {
+                html.append(QStringLiteral("<span style=\""));
+                if (!curFg.isEmpty())
+                    html.append(QStringLiteral("color:%1;").arg(curFg));
+                if (!curBg.isEmpty())
+                    html.append(QStringLiteral("background-color:%1;").arg(curBg));
+                if (curBold)
+                    html.append(QStringLiteral("font-weight:bold;"));
+                if (curItalic)
+                    html.append(QStringLiteral("font-style:italic;"));
+                if (curUnderline)
+                    html.append(QStringLiteral("text-decoration:underline;"));
+                html.append(QStringLiteral("\">"));
+                spanOpen = true;
+            }
+        }
+
+        appendCellText(html, cell);
+
+        // Skip continuation cells for double-width characters
+        if (cell.width > 1) {
+            col += cell.width - 1;
+        }
+    }
+
+    closeSpan();
+    return html;
 }

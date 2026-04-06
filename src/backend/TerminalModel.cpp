@@ -35,12 +35,12 @@ int TerminalModel::rowCount(const QModelIndex &parent) const {
 QVariant TerminalModel::data(const QModelIndex &index, int role) const {
     if (!m_backend || !index.isValid()) return {};
 
-    if (role == TextRole) {
-        return m_backend->getLineText(index.row());
+    switch (role) {
+    case TextRole:
+        return m_backend->getLineHtml(index.row());
+    default:
+        return {};
     }
-
-    // TODO: Implement ForegroundRole / BackgroundRole per-cell
-    return {};
 }
 
 QHash<int, QByteArray> TerminalModel::roleNames() const {
