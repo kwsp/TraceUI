@@ -20,12 +20,14 @@ Item {
     }
 
     PanelFrame {
+        anchors.fill: parent
         title: "NETWORK"
     }
 
     Column {
         anchors.fill: parent
         anchors.margins: 15
+        anchors.topMargin: 25 // Make room for top bracket/title
         spacing: 20
 
         // 1. Network Status

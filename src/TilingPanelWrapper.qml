@@ -65,13 +65,14 @@ Item {
         z: 5
     }
 
-    // ── Border / background ───────────────────────────────────────────────────
+    // ── Background ────────────────────────────────────────────────────────────
     Rectangle {
         id: frame
         anchors.fill: parent
         color: "transparent"
-        border.color: dragArea.active ? Style.accentGold : Style.borderDefault
-        border.width: dragArea.active ? 2 : 1
+        // Draw a highlighted border only when actively dragging this panel
+        border.color: dragArea.active ? Style.accentGold : "transparent"
+        border.width: dragArea.active ? 2 : 0
         z: 1
     }
 
