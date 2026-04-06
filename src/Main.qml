@@ -36,10 +36,10 @@ Window {
 
     GlobePanel {
         id: globePanel
-        anchors.left: sysPanel.right
-        anchors.top: sysPanel.top
-        width: 300
-        height: 300
+        anchors.right: parent.right
+        anchors.top: parent.top
+        width: parent.width - 400 - 48 - 24 // Occupy remaining width
+        height: parent.height - 48
         anchors.margins: 24
     }
 

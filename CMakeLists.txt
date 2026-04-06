@@ -6,12 +6,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-project(TraceUI 
+project(TraceUI
   LANGUAGES C CXX
   VERSION 0.1.0
 )
 
 enable_testing()
 
+add_subdirectory(external/encom-globe)
 add_subdirectory(src)
 add_subdirectory(tests)

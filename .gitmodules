@@ -1,0 +1,3 @@
+[submodule "external/encom-globe"]
+	path = external/encom-globe
+	url = https://github.com/kwsp/encom-globe.cpp.git

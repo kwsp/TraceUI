@@ -3,7 +3,7 @@
 #include <QQuickWindow>
 #include <QtQml/qqml.h>
 
-#include "backend/CPuHistoryProvider.h"
+#include "backend/CpuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
 
 #ifdef Q_OS_MACOS
@@ -14,8 +14,20 @@
 
 #include "config.h"
 
+#include <QSurfaceFormat>
+#include <QtQml/qqmlextensionplugin.h>
+
+// Import the static EncomGlobe QML plugin
+Q_IMPORT_QML_PLUGIN(EncomGlobePlugin)
+
 int main(int argc, char *argv[]) {
   QQuickWindow::setDefaultAlphaBuffer(true);
+
+  QSurfaceFormat format;
+  format.setAlphaBufferSize(8);
+  format.setSamples(4);
+  QSurfaceFormat::setDefaultFormat(format);
+
   QGuiApplication app(argc, argv);
 
 #ifdef Q_OS_MACOS
