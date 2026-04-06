@@ -3,7 +3,7 @@
 #include <QQuickWindow>
 #include <QtQml/qqml.h>
 
-#include "backend/CPuHistoryProvider.h"
+#include "backend/CpuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
 
 #ifdef Q_OS_MACOS
