@@ -17,7 +17,7 @@ set(TRACEUI_QML_FILES
 )
 
 if(BUILD_TERMINAL)
-  list(APPEND TRACEUI_QML_FILES TerminalPanel.qml)
+  list(APPEND TRACEUI_QML_FILES terminal/TerminalPanel.qml)
 endif()
 
 qt_add_qml_module(${PROJECT_NAME}

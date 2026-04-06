@@ -71,6 +71,6 @@ Window {
         anchors.margins: 24
         focus: true
         active: buildTerminal
-        source: "TerminalPanel.qml"
+        source: "terminal/TerminalPanel.qml"
     }
 }
