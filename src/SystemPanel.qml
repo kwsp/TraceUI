@@ -46,33 +46,32 @@ Item {
             }
         }
 
-        Row {
-            spacing: 15
-            Text {
-                text: Qt.formatDate(new Date(), "yyyy MMM dd").toUpperCase()
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeData
+        Grid {
+            columns: 4
+            width: parent.width
+            spacing: 10
+
+            Column {
+                LabelText { text: "DATE" }
+                DataText { text: Qt.formatDate(new Date(), "yyyy MMM dd").toUpperCase() }
             }
-            Text {
-                text: "UPTIME " + SystemMonitor.uptime
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeData
+
+            Column {
+                LabelText { text: "UPTIME" }
+                DataText { text: SystemMonitor.uptime }
             }
-            Text {
-                text: SystemMonitor.osType
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeData
+
+            Column {
+                LabelText { text: "CPU" }
+                DataText { text: SystemMonitor.cpuName }
             }
-            Text {
-                text: SystemMonitor.powerSource
-                color: Style.accentGold
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeData
+
+            Column {
+                LabelText { text: "OS" }
+                DataText { text: SystemMonitor.osType }
             }
         }
+
     }
 
     // Section 2: CPU Usage
@@ -86,21 +85,15 @@ Item {
 
         Row {
             width: parent.width
-            Text {
+            HeaderText {
                 id: cpuUsageLabel
                 text: "CPU USAGE"
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeHeader
-                font.bold: true
             }
-            Text {
+            DataText {
                 width: parent.width - cpuUsageLabel.width
                 horizontalAlignment: Text.AlignRight
                 text: SystemMonitor.cpuUsageTotal.toFixed(1) + "%"
                 color: Style.accentGold
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeData
             }
         }
 
@@ -120,38 +113,32 @@ Item {
             Column {
                 width: parent.width / 4
                 clip: true
-                Text { text: "TEMP"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                LabelText { text: "TEMP" }
+                DataText { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C" }
             }
             Column {
                 width: parent.width / 4
                 clip: true
-                Text { text: "MIN"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { 
+                LabelText { text: "MIN" }
+                DataText { 
                     width: parent.width
                     text: SystemMonitor.cpuClockMin.toFixed(2) + " GHz"
-                    color: Style.textPrimary
-                    font.pixelSize: Style.sizeData
-                    font.family: Style.fontData
                 }
             }
             Column {
                 width: parent.width / 4
                 clip: true
-                Text { text: "MAX"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { 
+                LabelText { text: "MAX" }
+                DataText { 
                     width: parent.width
                     text: SystemMonitor.cpuClockMax.toFixed(2) + " GHz"
-                    color: Style.textPrimary
-                    font.pixelSize: Style.sizeData
-                    font.family: Style.fontData
                 }
             }
             Column {
                 width: parent.width / 4
                 clip: true
-                Text { text: "TASKS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { text: SystemMonitor.totalTasks.toString(); color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                LabelText { text: "TASKS" }
+                DataText { text: SystemMonitor.totalTasks.toString() }
             }
         }
     }
@@ -167,21 +154,14 @@ Item {
 
         Row {
             width: parent.width
-            Text {
+            HeaderText {
                 id: memoryUsageLabel
                 text: "MEMORY USAGE"
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeHeader
-                font.bold: true
             }
-            Text {
+            DataText {
                 width: parent.width - memoryUsageLabel.width
                 horizontalAlignment: Text.AlignRight
-                text:  (SystemMonitor.ramUsedMB/1024).toFixed(1) + " / " + (SystemMonitor.ramTotalMB/1024).toFixed(1) + " GIB"
-                color: Style.textPrimary
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeData
+                text: (SystemMonitor.ramUsedMB/1024).toFixed(1) + " / " + (SystemMonitor.ramTotalMB/1024).toFixed(1) + " GIB"
             }
         }
 
@@ -205,12 +185,8 @@ Item {
         spacing: 5
         clip: true
 
-        Text {
+        HeaderText {
             text: "TOP PROCESSES"
-            color: Style.textLabel
-            font.family: Style.fontData
-            font.pixelSize: Style.sizeHeader
-            font.bold: true
         }
 
         ListView {
@@ -233,27 +209,19 @@ Item {
                 width: processList.width
                 height: 18
                 spacing: processList.colSpacing
-                Text { 
+                LabelText { 
                     width: processList.colPid
                     text: "PID" 
-                    color: Style.textLabel
-                    font.pixelSize: Style.sizeLabel
-                    font.family: Style.fontData
                 }
-                Text { 
+                LabelText { 
                     width: headerRow.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
                     text: "NAME" 
-                    color: Style.textLabel
-                    font.pixelSize: Style.sizeLabel
-                    font.family: Style.fontData
                 }
-                Text { 
+                LabelText { 
                     id: cpuHeader
                     width: processList.colCpu
                     text: "CPU%" 
                     color: ProcessWatcher.sortByCpu ? Style.accentGold : Style.textLabel
-                    font.pixelSize: Style.sizeLabel
-                    font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight
                     
                     MouseArea {
@@ -262,13 +230,11 @@ Item {
                         onClicked: ProcessWatcher.toggleSort()
                     }
                 }
-                Text { 
+                LabelText { 
                     id: memHeader
                     width: processList.colMem
                     text: "MEM" 
                     color: ProcessWatcher.sortByCpu ? Style.textLabel : Style.accentGold
-                    font.pixelSize: Style.sizeLabel
-                    font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight
                     
                     MouseArea {
@@ -290,35 +256,24 @@ Item {
                 height: 18
                 spacing: processList.colSpacing
                 
-                Text { 
+                DataText { 
                     width: processList.colPid
                     text: procRow.pid.toString()
                     color: Style.accentSilver
-                    font.pixelSize: Style.sizeData
-                    font.family: Style.fontData
                 }
-                Text {
+                DataText {
                     width: procRow.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
                     text: procRow.name
-                    color: Style.textPrimary
-                    font.pixelSize: Style.sizeData
-                    font.family: Style.fontData
                     elide: Text.ElideRight
                 }
-                Text { 
+                DataText { 
                     width: processList.colCpu
                     text: procRow.cpuPct.toFixed(1)
-                    color: Style.textPrimary
-                    font.pixelSize: Style.sizeData
-                    font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight
                 }
-                Text { 
+                DataText { 
                     width: processList.colMem
                     text: procRow.ramMB + " MB"
-                    color: Style.textPrimary
-                    font.pixelSize: Style.sizeData
-                    font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight
                 }
             }

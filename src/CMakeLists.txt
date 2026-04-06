@@ -20,6 +20,9 @@ set(TRACEUI_QML_FILES
   SplitDivider.qml
   PanelFrame.qml
   SectionBracket.qml
+  DataText.qml
+  LabelText.qml
+  HeaderText.qml
 )
 
 # TRACEUI_QML_FILES already defined above
