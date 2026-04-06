@@ -180,7 +180,7 @@ Item {
             readonly property int colPid: 45
             readonly property int colCpu: 50
             readonly property int colMem: 45
-            readonly property int colSpacing: 2
+            readonly property int colSpacing: 1
 
             header: Row {
                 width: processList.width
@@ -262,7 +262,7 @@ Item {
                 Text { 
                     width: processList.colCpu
                     text: procRow.cpuPct.toFixed(1)
-                    color: Style.accentGold
+                    color: Style.textPrimary
                     font.pixelSize: Style.sizeData
                     font.family: Style.fontData
                     horizontalAlignment: Text.AlignRight

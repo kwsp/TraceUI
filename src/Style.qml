@@ -23,6 +23,6 @@ QtObject {
     // HUD Typography Sizes
     readonly property real sizeClock:  64
     readonly property real sizeHeader: 14
-    readonly property real sizeData:   10
-    readonly property real sizeLabel:  8
+    readonly property real sizeData:   12
+    readonly property real sizeLabel:  10
 }
