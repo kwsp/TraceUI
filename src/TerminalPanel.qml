@@ -36,15 +36,16 @@ FocusScope {
             anchors.margins: 10
             model: termModel
             clip: true
-            interactive: false // Terminal handles scrolling internally usually
+            interactive: false
 
             onWidthChanged: updateDimensions()
             onHeightChanged: updateDimensions()
 
             function updateDimensions() {
                 if (width > 0 && height > 0) {
-                    termBackend.cols = Math.floor(width / 9)
-                    termBackend.rows = Math.floor(height / 18)
+                    let newCols = Math.floor(width / 9)
+                    let newRows = Math.floor(height / 18)
+                    termBackend.resize(newRows, newCols)
                 }
             }
 
@@ -78,7 +79,7 @@ FocusScope {
             color: Style.accentGold
             x: 10 + termBackend.cursorCol * 9
             y: 10 + termBackend.cursorRow * 18 - terminalView.contentY
-            visible: root.activeFocus && (y >= 10 && y <= terminalView.height + 10)
+            visible: root.activeFocus && y >= 10 && y <= terminalView.height + 10
 
             SequentialAnimation on opacity {
                 loops: Animation.Infinite
@@ -91,10 +92,8 @@ FocusScope {
     // Keyboard handling
     focus: true
     Keys.onPressed: (event) => {
-        console.log("Key pressed:", event.key, "text:", event.text);
         if (event.modifiers & Qt.ControlModifier) {
             if (event.key >= Qt.Key_A && event.key <= Qt.Key_Z) {
-                // Ctrl+A is 1, Ctrl+B is 2, etc.
                 let ctrlKey = String.fromCharCode(event.key - Qt.Key_A + 1)
                 termBackend.sendInput(ctrlKey)
                 event.accepted = true
@@ -118,10 +117,20 @@ FocusScope {
             termBackend.sendInput("\x1b[C")
         } else if (event.key === Qt.Key_Left) {
             termBackend.sendInput("\x1b[D")
+        } else if (event.key === Qt.Key_Home) {
+            termBackend.sendInput("\x1b[H")
+        } else if (event.key === Qt.Key_End) {
+            termBackend.sendInput("\x1b[F")
+        } else if (event.key === Qt.Key_Delete) {
+            termBackend.sendInput("\x1b[3~")
+        } else if (event.key === Qt.Key_PageUp) {
+            termBackend.sendInput("\x1b[5~")
+        } else if (event.key === Qt.Key_PageDown) {
+            termBackend.sendInput("\x1b[6~")
         } else if (event.text.length > 0) {
             termBackend.sendInput(event.text)
         } else {
-            return;
+            return
         }
         event.accepted = true
     }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <vterm.h>
 #include "TerminalBackend.h"
 
 class TerminalModel : public QAbstractListModel {
@@ -9,27 +8,27 @@ class TerminalModel : public QAbstractListModel {
     Q_PROPERTY(TerminalBackend* backend READ backend WRITE setBackend NOTIFY backendChanged)
 
 public:
-    enum Roles {
+    enum Role {
         TextRole = Qt::UserRole + 1,
         ForegroundRole,
-        BackgroundRole
+        BackgroundRole,
     };
 
     explicit TerminalModel(QObject *parent = nullptr);
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    QHash<int, QByteArray> roleNames() const override;
+    [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
-    TerminalBackend* backend() const { return m_backend; }
-    void setBackend(TerminalBackend* backend);
+    [[nodiscard]] TerminalBackend *backend() const { return m_backend; }
+    void setBackend(TerminalBackend *backend);
 
 signals:
     void backendChanged();
 
 private slots:
-    void updateScreen();
+    void onScreenUpdated();
 
 private:
-    TerminalBackend* m_backend = nullptr;
+    TerminalBackend *m_backend = nullptr;
 };
