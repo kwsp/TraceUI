@@ -114,20 +114,21 @@ Item {
             fragmentShader: "qrc:/shaders/cpugraph.frag.qsb"
         }
 
-        Grid {
-            columns: 3
+        Row {
             width: parent.width
-            spacing: 10
             
             Column {
+                width: parent.width / 3
                 Text { text: "TEMP"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
                 Text { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
             Column {
+                width: parent.width / 3
                 Text { text: "CLOCK"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
                 Text { text: SystemMonitor.cpuClockMin.toFixed(2) + " / " + SystemMonitor.cpuClockMax.toFixed(2) + " GHz"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
             Column {
+                width: parent.width / 3
                 Text { text: "TASKS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
                 Text { text: SystemMonitor.totalTasks.toString(); color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
