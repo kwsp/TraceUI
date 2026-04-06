@@ -68,7 +68,7 @@ Window {
             opacity: 0
         }
 
-        // Terminal Column (Optional)
+        // Terminal Column (Optional) - wrapped with reveal animation
         TilingPanelWrapper {
             id: wrapperTerm
             panelId: "terminal"
@@ -76,7 +76,17 @@ Window {
             SplitView.preferredWidth: 500
             SplitView.minimumWidth: 300
             clip: true
-            opacity: 0
+            opacity: 1  // Container manages opacity
+
+            // Terminal container with built-in reveal animation
+            TerminalContainer {
+                id: terminalContainer
+                anchors.fill: parent
+
+                onRevealComplete: {
+                    root.animPhase = 2
+                }
+            }
         }
 
         // Restore layout state on startup
@@ -86,36 +96,6 @@ Window {
             // Populate panels into their saved slots
             LayoutStore.restorePanelAssignments(panelRegistry)
         }
-    }
-
-    // ── Terminal reveal animation (outside wrapper to avoid opacity inheritance) ──
-    TurnOnReveal {
-        id: termReveal
-        visible: buildTerminal
-        x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
-        y: wrapperTerm.mapToItem(root.contentItem, 0, 0).y
-        width: wrapperTerm.width
-        height: wrapperTerm.height
-        z: 500
-
-        onExpandComplete: {
-            // Terminal content fades in
-            termContentAnim.start()
-        }
-
-        onDone: {
-            root.animPhase = 2
-        }
-    }
-
-    // Terminal content fade-in
-    NumberAnimation {
-        id: termContentAnim
-        target: wrapperTerm
-        property: "opacity"
-        from: 0; to: 1
-        duration: AnimConfig.termExpandDur
-        easing.type: AnimConfig.termExpandEasing
     }
 
     // ── Panel fade-in animations ─────────────────────────────────────────────
@@ -162,7 +142,7 @@ Window {
     onAnimPhaseChanged: {
         switch (animPhase) {
         case 1:
-            termReveal.start()
+            terminalContainer.startReveal()
             break
         case 2:
             panelFadeTimer.start()
@@ -194,17 +174,11 @@ Window {
     // All panel instances live here, parented to root so they survive reparenting
     SystemPanel  { id: sysPanel;  visible: false }
     NetworkPanel { id: netPanel;  visible: false }
-    Loader {
-        id: termLoader
-        active: buildTerminal
-        source: buildTerminal ? "qrc:/qt/qml/TraceUITerminal/TerminalPanel.qml" : ""
-        visible: false
-    }
 
     // Registry: panelId -> Item, slot id -> TilingPanelWrapper
     QtObject {
         id: panelRegistry
-        property var panels: ({ "system": sysPanel, "network": netPanel, "terminal": termLoader })
+        property var panels: ({ "system": sysPanel, "network": netPanel, "terminal": terminalContainer })
         property var slots:  ({ "left": wrapperLeft, "right": wrapperRight, "terminal": wrapperTerm })
         property var defaultAssignment: ({ "system": "left", "network": "right", "terminal": "terminal" })
 

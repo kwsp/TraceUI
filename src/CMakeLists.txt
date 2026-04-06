@@ -14,6 +14,7 @@ set(TRACEUI_QML_FILES
   LayoutStore.qml
   AnimConfig.qml
   TurnOnReveal.qml
+  TerminalContainer.qml
   Main.qml
   SystemPanel.qml
   ProcessPanel.qml

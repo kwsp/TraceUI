@@ -19,7 +19,7 @@ Item {
 
     // ── Configuration ────────────────────────────────────────────────────────
     property color lineColor: Style.accentGold
-    property int lineThickness: 2
+    property int lineThickness: 1
     property int appearDuration: AnimConfig.termLineAppearDur   // fade-in time
     property int expandDuration: AnimConfig.termExpandDur       // expansion time
     property int contentDelay: AnimConfig.termContentDelay      // pause before expandComplete
