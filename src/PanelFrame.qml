@@ -52,7 +52,7 @@ Item {
                 text: root.title
                 color: Style.textLabel
                 font.family: Style.fontData
-                font.pixelSize: Style.sizeLabel
+                font.pixelSize: Style.sizeHeader
                 font.bold: true
             }
         }

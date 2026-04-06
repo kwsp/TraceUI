@@ -84,12 +84,24 @@ Item {
         anchors.margins: 10
         spacing: 5
 
-        Text {
-            text: "CPU USAGE / " + SystemMonitor.cpuName
-            color: Style.textLabel
-            font.family: Style.fontData
-            font.pixelSize: Style.sizeHeader
-            font.bold: true
+        Row {
+            width: parent.width
+            Text {
+                id: cpuUsageLabel
+                text: "CPU USAGE"
+                color: Style.textLabel
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
+            }
+            Text {
+                width: parent.width - cpuUsageLabel.width
+                horizontalAlignment: Text.AlignRight
+                text: SystemMonitor.cpuName
+                color: Style.textPrimary
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeData
+            }
         }
 
         ShaderEffect {

@@ -47,7 +47,8 @@ Item {
             anchors.centerIn: parent
             color: Style.textLabel
             font.family: Style.fontData
-            font.pixelSize: Style.sizeLabel
+            font.pixelSize: Style.sizeHeader
+            font.bold: true
         }
     }
 }
