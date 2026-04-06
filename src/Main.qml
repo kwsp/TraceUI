@@ -68,7 +68,7 @@ Window {
             opacity: 0
         }
 
-        // Terminal Column (Optional)
+        // Terminal Column (Optional) with reveal animation
         TilingPanelWrapper {
             id: wrapperTerm
             panelId: "terminal"
@@ -77,10 +77,35 @@ Window {
             SplitView.minimumWidth: 300
             clip: true
             opacity: 0
-            
-            // Reveal clip: grows from center during animation
-            property real revealCenterY: height / 2
+
+            // Reveal animation state
             property real revealHalfHeight: 0
+
+            // Top reveal line (moves upward from center)
+            Rectangle {
+                id: termLineTop
+                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 2
+                z: 500
+                anchors.left: parent.left
+                anchors.right: parent.right
+                y: parent.height / 2 - wrapperTerm.revealHalfHeight
+                height: 2
+                color: Style.accentGold
+                opacity: 0
+            }
+
+            // Bottom reveal line (moves downward from center)
+            Rectangle {
+                id: termLineBottom
+                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 2
+                z: 500
+                anchors.left: parent.left
+                anchors.right: parent.right
+                y: parent.height / 2 + wrapperTerm.revealHalfHeight - 2
+                height: 2
+                color: Style.accentGold
+                opacity: 0
+            }
         }
 
         // Restore layout state on startup
@@ -92,44 +117,7 @@ Window {
         }
     }
 
-    // ── Terminal reveal: two lines expanding from center ─────────────────────
-    // A horizontal line appears at center of terminal area, then splits into
-    // two lines moving up/down to reveal terminal content between them.
-
-    property real termRevealCenterY: {
-        // Center Y of terminal column in root coordinates
-        let termPos = wrapperTerm.mapToItem(root.contentItem, 0, 0)
-        return termPos.y + wrapperTerm.height / 2
-    }
-    property real termRevealX: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
-    property real termRevealWidth: wrapperTerm.width
-    property real termRevealHalfHeight: 0  // grows during expansion
-
-    // Top line (moves upward)
-    Rectangle {
-        id: termLineTop
-        visible: buildTerminal && animPhase >= 1 && animPhase <= 2
-        z: 500
-        x: root.termRevealX
-        y: root.termRevealCenterY - root.termRevealHalfHeight
-        width: root.termRevealWidth
-        height: 2
-        color: Style.accentGold
-        opacity: 0
-    }
-
-    // Bottom line (moves downward)
-    Rectangle {
-        id: termLineBottom
-        visible: buildTerminal && animPhase >= 1 && animPhase <= 2
-        z: 500
-        x: root.termRevealX
-        y: root.termRevealCenterY + root.termRevealHalfHeight - 2
-        width: root.termRevealWidth
-        height: 2
-        color: Style.accentGold
-        opacity: 0
-    }
+    // ── Terminal reveal animations ───────────────────────────────────────────
 
     // Phase 1: Center line appears (both lines at same position)
     SequentialAnimation {
@@ -155,8 +143,8 @@ Window {
     ParallelAnimation {
         id: termExpandAnim
         NumberAnimation {
-            target: root
-            property: "termRevealHalfHeight"
+            target: wrapperTerm
+            property: "revealHalfHeight"
             from: 1; to: wrapperTerm.height / 2
             duration: AnimConfig.termExpandDur
             easing.type: AnimConfig.termExpandEasing
