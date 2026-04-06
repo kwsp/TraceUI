@@ -59,7 +59,7 @@ public:
 
     void setRows(int rows);
     void setCols(int cols);
-    void resize(int rows, int cols);
+    Q_INVOKABLE void resize(int rows, int cols);
     void setCursorPos(int row, int col);
     void writeToPty(const QByteArray &data);
 
