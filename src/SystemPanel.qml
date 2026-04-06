@@ -176,14 +176,46 @@ Item {
             interactive: true
             spacing: 2
 
+            // Column widths - must match header and delegate
+            readonly property int colPid: 50
+            readonly property int colCpu: 55
+            readonly property int colMem: 50
+            readonly property int colSpacing: 4
+
             header: Row {
                 width: processList.width
                 height: 18
-                spacing: 4
-                Text { width: 50; text: "PID"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { text: "NAME"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { width: 55; text: "CPU%"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData; horizontalAlignment: Text.AlignRight }
-                Text { width: 50; text: "MEM"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData; horizontalAlignment: Text.AlignRight }
+                spacing: processList.colSpacing
+                Text { 
+                    width: processList.colPid
+                    text: "PID" 
+                    color: Style.textLabel
+                    font.pixelSize: Style.sizeLabel
+                    font.family: Style.fontData
+                }
+                Text { 
+                    width: processList.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
+                    text: "NAME" 
+                    color: Style.textLabel
+                    font.pixelSize: Style.sizeLabel
+                    font.family: Style.fontData
+                }
+                Text { 
+                    width: processList.colCpu
+                    text: "CPU%" 
+                    color: Style.textLabel
+                    font.pixelSize: Style.sizeLabel
+                    font.family: Style.fontData
+                    horizontalAlignment: Text.AlignRight
+                }
+                Text { 
+                    width: processList.colMem
+                    text: "MEM" 
+                    color: Style.textLabel
+                    font.pixelSize: Style.sizeLabel
+                    font.family: Style.fontData
+                    horizontalAlignment: Text.AlignRight
+                }
             }
 
             delegate: Row {
@@ -195,18 +227,17 @@ Item {
 
                 width: processList.width
                 height: 18
-                spacing: 4
+                spacing: processList.colSpacing
                 
                 Text { 
-                    width: 50
+                    width: processList.colPid
                     text: procRow.pid.toString()
                     color: Style.accentSilver
                     font.pixelSize: Style.sizeData
                     font.family: Style.fontData
                 }
                 Text {
-                    // Name takes remaining width minus fixed columns
-                    width: procRow.width - 50 - 55 - 50 - 12 // total - pid - cpu - mem - spacing
+                    width: processList.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
                     text: procRow.name
                     color: Style.textPrimary
                     font.pixelSize: Style.sizeData
@@ -215,7 +246,7 @@ Item {
                     clip: true
                 }
                 Text { 
-                    width: 55
+                    width: processList.colCpu
                     text: procRow.cpuPct.toFixed(1)
                     color: Style.accentGold
                     font.pixelSize: Style.sizeData
@@ -223,7 +254,7 @@ Item {
                     horizontalAlignment: Text.AlignRight
                 }
                 Text { 
-                    width: 50
+                    width: processList.colMem
                     text: procRow.ramMB.toString()
                     color: Style.textPrimary
                     font.pixelSize: Style.sizeData

@@ -30,7 +30,7 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: 15
+        anchors.margins: 10
         anchors.topMargin: 30
         spacing: 5
 
@@ -66,15 +66,52 @@ Item {
         }
     }
 
+    // Divider line between status and globe
+    Rectangle {
+        id: divider1
+        anchors.top: statusSection.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
+        anchors.topMargin: 8
+        height: 1
+        color: Style.borderDefault
+    }
+
+    // Section 2: World View (center, fills remaining space)
+    Column {
+        id: globeSection
+        anchors.top: divider1.bottom
+        anchors.bottom: trafficSection.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 10
+        spacing: 5
+
+        Text {
+            text: "GLOBAL NETWORK MAP / ENDPOINT: 41.8781, -87.6298"
+            color: Style.textLabel
+            font.family: Style.fontData
+            font.pixelSize: Style.sizeHeader
+            font.bold: true
+        }
+
+        GlobePanel {
+            width: parent.width
+            height: parent.height - 25 // Account for header text and spacing
+        }
+    }
+
     // Section 3: Traffic Flow (bottom)
     Column {
         id: trafficSection
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: 15
-        anchors.bottomMargin: 20
-        spacing: 8
+        anchors.margins: 10
+        anchors.bottomMargin: 15
+        spacing: 5
 
         Text {
             text: "TOTAL TRAFFIC FLOW"
@@ -85,7 +122,7 @@ Item {
         }
 
         Row {
-            spacing: 20
+            spacing: 15
             Text {
                 text: (NetworkMonitor.downloadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB OUT"
                 color: Style.accentGold
@@ -102,7 +139,7 @@ Item {
 
         Item {
             width: parent.width
-            height: 80
+            height: 70
             
             ShaderEffect {
                 anchors.fill: parent
@@ -112,32 +149,6 @@ Item {
                 property real phase:          netHistProvider.phase
                 fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
             }
-        }
-    }
-
-    // Section 2: World View (center, fills remaining space)
-    Column {
-        id: globeSection
-        anchors.top: statusSection.bottom
-        anchors.bottom: trafficSection.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: 15
-        anchors.topMargin: 10
-        anchors.bottomMargin: 10
-        spacing: 5
-
-        Text {
-            text: "GLOBAL NETWORK MAP / ENDPOINT: 41.8781, -87.6298"
-            color: Style.textLabel
-            font.family: Style.fontData
-            font.pixelSize: Style.sizeHeader
-            font.bold: true
-        }
-
-        GlobePanel {
-            width: parent.width
-            height: parent.height - 25 // Account for header text and spacing
         }
     }
 }
