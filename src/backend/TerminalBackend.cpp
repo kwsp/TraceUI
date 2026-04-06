@@ -144,14 +144,20 @@ void TerminalBackend::setupVTerm() {
 }
 
 void TerminalBackend::start(const QString &shell) {
-    // Resolve shell path
+    // Resolve shell path and home directory
     QString shellToUse = shell;
-    if (shellToUse.isEmpty()) {
-        if (const auto *pw = getpwuid(getuid()); pw && pw->pw_shell) {
+    QString homeDir;
+    if (const auto *pw = getpwuid(getuid()); pw) {
+        if (shellToUse.isEmpty() && pw->pw_shell) {
             shellToUse = QString::fromLocal8Bit(pw->pw_shell);
-        } else {
-            shellToUse = QStringLiteral("/bin/sh");
         }
+        if (pw->pw_dir) {
+            homeDir = QString::fromLocal8Bit(pw->pw_dir);
+        }
+    }
+
+    if (shellToUse.isEmpty()) {
+        shellToUse = QStringLiteral("/bin/sh");
     }
 
     qDebug() << "Starting shell:" << shellToUse << "rows:" << m_rows << "cols:" << m_cols;
@@ -165,6 +171,11 @@ void TerminalBackend::start(const QString &shell) {
 
     if (m_childPid == 0) {
         // ── Child process ──
+        if (!homeDir.isEmpty()) {
+            if (chdir(homeDir.toLocal8Bit().constData()) != 0) {
+                perror("chdir");
+            }
+        }
         setenv("TERM", "xterm-256color", 1);
         const QByteArray shellPath = shellToUse.toLocal8Bit();
         const QByteArray shellName = QByteArray("-") + shellToUse.section('/', -1).toLocal8Bit();
