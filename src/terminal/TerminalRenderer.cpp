@@ -30,6 +30,7 @@ void TerminalRenderer::setFontData(const QString& font) {
     if (m_fontData == font) return;
     m_fontData = font;
     m_fontDirty = true;
+    m_metricsDirty = true;
     emit fontDataChanged();
     update();
 }
@@ -38,6 +39,7 @@ void TerminalRenderer::setFontSize(int size) {
     if (m_fontSize == size) return;
     m_fontSize = size;
     m_fontDirty = true;
+    m_metricsDirty = true;
     emit fontSizeChanged();
     update();
 }
@@ -47,7 +49,19 @@ void TerminalRenderer::geometryChange(const QRectF& newGeometry, const QRectF& o
     update();
 }
 
+void TerminalRenderer::updateCellMetrics() {
+    if (!m_metricsDirty) return;
+
+    QFont font(m_fontData, m_fontSize);
+    QFontMetricsF fm(font);
+    m_cellWidth = fm.horizontalAdvance('W');
+    m_cellHeight = fm.height();
+    m_metricsDirty = false;
+    emit cellMetricsChanged();
+}
+
 void TerminalRenderer::updateGlyphAtlas() {
+    updateCellMetrics();
     if (!m_fontDirty && m_atlasTexture) return;
 
     QFont font(m_fontData, m_fontSize);
@@ -61,9 +75,8 @@ void TerminalRenderer::updateGlyphAtlas() {
     }
 
     // Determine cell size
-    QFontMetricsF fm(font);
-    qreal cellWidth = fm.horizontalAdvance('W');
-    qreal cellHeight = fm.height();
+    qreal cellWidth = m_cellWidth;
+    qreal cellHeight = m_cellHeight;
 
     // Create atlas (simple horizontal strip for now)
     int atlasWidth = static_cast<int>(std::ceil(cellWidth * glyphIndices.size()));
@@ -107,16 +120,47 @@ QSGNode* TerminalRenderer::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData
         node->setGeometry(geometry);
     }
 
-    // Just render a placeholder quad using the atlas for now to verify it works
+    int rows = m_backend->rows();
+    int cols = m_backend->cols();
+    
+    // Each cell is 2 triangles (6 vertices)
+    int vertexCount = rows * cols * 6;
     auto* geometry = node->geometry();
-    geometry->allocate(4);
+    geometry->allocate(vertexCount);
     auto* vertices = geometry->vertexDataAsTexturedPoint2D();
-    const QRectF rect = boundingRect();
 
-    vertices[0].set(rect.left(), rect.top(), 0, 0);
-    vertices[1].set(rect.left(), rect.bottom(), 0, 1);
-    vertices[2].set(rect.right(), rect.top(), 1, 0);
-    vertices[3].set(rect.right(), rect.bottom(), 1, 1);
+    int vIdx = 0;
+    for (int r = 0; r < rows; ++r) {
+        QString line = m_backend->getLineText(r);
+        for (int c = 0; c < cols; ++c) {
+            uint32_t cp = (c < line.length()) ? line[c].unicode() : ' ';
+            
+            // Simplified: only ASCII 32-126 supported in atlas for now
+            if (cp < 32 || cp > 126) cp = ' ';
+            
+            uint32_t glyphIdx = m_rawFont.glyphIndexesForString(QString(QChar(cp)))[0];
+            const auto& gInfo = m_glyphCache[glyphIdx];
+
+            qreal x1 = c * m_cellWidth;
+            qreal y1 = r * m_cellHeight;
+            qreal x2 = x1 + m_cellWidth;
+            qreal y2 = y1 + m_cellHeight;
+
+            float u1 = gInfo.uvRect.left();
+            float v1 = gInfo.uvRect.top();
+            float u2 = gInfo.uvRect.right();
+            float v2 = gInfo.uvRect.bottom();
+
+            // Triangle 1
+            vertices[vIdx++].set(x1, y1, u1, v1);
+            vertices[vIdx++].set(x1, y2, u1, v2);
+            vertices[vIdx++].set(x2, y1, u2, v1);
+            // Triangle 2
+            vertices[vIdx++].set(x2, y1, u2, v1);
+            vertices[vIdx++].set(x1, y2, u1, v2);
+            vertices[vIdx++].set(x2, y2, u2, v2);
+        }
+    }
 
     node->markDirty(QSGNode::DirtyGeometry);
     return node;
