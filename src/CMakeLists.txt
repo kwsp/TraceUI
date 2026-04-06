@@ -1,19 +1,23 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick ShaderTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QmlModels ShaderTools)
 qt_standard_project_setup(REQUIRES 6.5)
 
 qt_add_executable(${PROJECT_NAME}
   main.cpp
 )
 
-set_source_files_properties(Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Style.qml       PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(LayoutStore.qml  PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 set(TRACEUI_QML_FILES
   Style.qml
+  LayoutStore.qml
   Main.qml
   SystemPanel.qml
   ProcessPanel.qml
   NetworkPanel.qml
   GlobePanel.qml
+  TilingPanelWrapper.qml
+  SplitDivider.qml
 )
 
 # TRACEUI_QML_FILES already defined above
