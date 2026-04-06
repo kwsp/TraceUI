@@ -1,10 +1,12 @@
 #include <QtGlobal>
 #ifndef Q_OS_MACOS
-int main(int, char*[]) { return 0; }
+int main(int, char *[]) {
+    return 0;
+}
 #else
-#include <QtTest>
-#include <QCoreApplication>
 #include "backend/macos/SystemMonitorMacOS.h"
+#include <QCoreApplication>
+#include <QtTest>
 
 class SystemMonitorTest : public QObject {
     Q_OBJECT
@@ -22,9 +24,9 @@ private slots:
     void testUpdateProvidesData() {
         SystemMonitorMacOS monitor;
         monitor.update();
-        
+
         QVERIFY(monitor.ramTotalMB() > 0);
-        
+
         monitor.update();
         QVERIFY(!monitor.cpuUsagePercent().isEmpty());
         QVERIFY(monitor.ramUsedMB() > 0);

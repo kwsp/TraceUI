@@ -1,12 +1,10 @@
 #include "TerminalModel.h"
 
-TerminalModel::TerminalModel(QObject *parent)
-    : QAbstractListModel(parent)
-{
-}
+TerminalModel::TerminalModel(QObject *parent) : QAbstractListModel(parent) {}
 
 void TerminalModel::setBackend(TerminalBackend *backend) {
-    if (m_backend == backend) return;
+    if (m_backend == backend)
+        return;
 
     if (m_backend) {
         disconnect(m_backend, nullptr, this, nullptr);
@@ -15,10 +13,8 @@ void TerminalModel::setBackend(TerminalBackend *backend) {
     m_backend = backend;
 
     if (m_backend) {
-        connect(m_backend, &TerminalBackend::screenDamaged,
-                this, &TerminalModel::onScreenDamaged);
-        connect(m_backend, &TerminalBackend::rowsChanged,
-                this, [this]() {
+        connect(m_backend, &TerminalBackend::screenDamaged, this, &TerminalModel::onScreenDamaged);
+        connect(m_backend, &TerminalBackend::rowsChanged, this, [this]() {
             beginResetModel();
             endResetModel();
         });
@@ -28,12 +24,14 @@ void TerminalModel::setBackend(TerminalBackend *backend) {
 }
 
 int TerminalModel::rowCount(const QModelIndex &parent) const {
-    if (parent.isValid()) return 0;  // Flat list model
+    if (parent.isValid())
+        return 0; // Flat list model
     return m_backend ? m_backend->rows() : 0;
 }
 
 QVariant TerminalModel::data(const QModelIndex &index, int role) const {
-    if (!m_backend || !index.isValid()) return {};
+    if (!m_backend || !index.isValid())
+        return {};
 
     switch (role) {
     case TextRole:
@@ -45,14 +43,14 @@ QVariant TerminalModel::data(const QModelIndex &index, int role) const {
 
 QHash<int, QByteArray> TerminalModel::roleNames() const {
     return {
-        { TextRole,       "text"    },
-        { ForegroundRole, "fgColor" },
-        { BackgroundRole, "bgColor" },
+        {TextRole, "text"},
+        {ForegroundRole, "fgColor"},
+        {BackgroundRole, "bgColor"},
     };
 }
 
 void TerminalModel::onScreenDamaged(int startRow, int endRow) {
     if (startRow >= 0 && endRow >= startRow && endRow < rowCount()) {
-        emit dataChanged(index(startRow), index(endRow), { TextRole });
+        emit dataChanged(index(startRow), index(endRow), {TextRole});
     }
 }

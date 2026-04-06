@@ -1,12 +1,12 @@
 #pragma once
 
-#include <QAbstractListModel>
 #include "TerminalBackend.h"
+#include <QAbstractListModel>
 
 class TerminalModel : public QAbstractListModel {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(TerminalBackend* backend READ backend WRITE setBackend NOTIFY backendChanged)
+    Q_PROPERTY(TerminalBackend *backend READ backend WRITE setBackend NOTIFY backendChanged)
 
 public:
     enum Role {
@@ -18,7 +18,8 @@ public:
     explicit TerminalModel(QObject *parent = nullptr);
 
     [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] QVariant data(const QModelIndex &index,
+                                int role = Qt::DisplayRole) const override;
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     [[nodiscard]] TerminalBackend *backend() const { return m_backend; }

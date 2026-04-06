@@ -1,23 +1,23 @@
 #pragma once
 
+#include "ProcessListModel.h"
 #include <QObject>
 #include <QVariantList>
 #include <QtQml/qqmlregistration.h>
-#include "ProcessListModel.h"
 
 class ProcessWatcher : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("ProcessWatcher is provided by the backend")
-    Q_PROPERTY(ProcessListModel* processes READ processes CONSTANT)
+    Q_PROPERTY(ProcessListModel *processes READ processes CONSTANT)
     Q_PROPERTY(QVariantList watchedServices READ watchedServices NOTIFY dataUpdated)
     Q_PROPERTY(bool sortByCpu READ sortByCpu NOTIFY sortByCpuChanged)
 
 public:
-    explicit ProcessWatcher(QObject* parent = nullptr);
+    explicit ProcessWatcher(QObject *parent = nullptr);
     virtual ~ProcessWatcher() = default;
 
-    [[nodiscard]] ProcessListModel* processes();
+    [[nodiscard]] ProcessListModel *processes();
     [[nodiscard]] QVariantList watchedServices() const;
     [[nodiscard]] bool sortByCpu() const;
 
@@ -26,7 +26,7 @@ public:
 
 signals:
     void dataUpdated();
-    void serviceDown(const QString& name);
+    void serviceDown(const QString &name);
     void sortByCpuChanged();
 
 protected:

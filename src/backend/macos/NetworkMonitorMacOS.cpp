@@ -1,14 +1,13 @@
 #include "NetworkMonitorMacOS.h"
-#include <sys/sysctl.h>
-#include <sys/socket.h>
+#include <QDateTime>
+#include <ifaddrs.h>
 #include <net/if.h>
 #include <net/if_mib.h>
 #include <net/route.h>
-#include <ifaddrs.h>
-#include <QDateTime>
+#include <sys/socket.h>
+#include <sys/sysctl.h>
 
-NetworkMonitorMacOS::NetworkMonitorMacOS(QObject* parent) 
-    : NetworkMonitor(parent) {
+NetworkMonitorMacOS::NetworkMonitorMacOS(QObject *parent) : NetworkMonitor(parent) {
     connect(&m_timer, &QTimer::timeout, this, &NetworkMonitorMacOS::performUpdate);
     m_timer.start(2000); // 2 seconds polling
 }
@@ -21,9 +20,9 @@ void NetworkMonitorMacOS::performUpdate() {
     updateNetworkTraffic();
     updateActiveConnections();
     m_ipv4Address = "192.168.1.42"; // Placeholder
-    m_isOnline = true; // Placeholder
-    m_pingMs = 15; // Placeholder
-    m_packetLossPct = 0.05; // Placeholder
+    m_isOnline = true;              // Placeholder
+    m_pingMs = 15;                  // Placeholder
+    m_packetLossPct = 0.05;         // Placeholder
     emit dataUpdated();
 }
 
@@ -62,8 +61,12 @@ void NetworkMonitorMacOS::updateNetworkTraffic() {
         TrafficData prev = m_prevTrafficData["total"];
         double timeDiffSec = (currentMs - prev.timestampMs) / 1000.0;
         if (timeDiffSec > 0.0) {
-            m_downloadBytesPerSec = (currentTotalIBytes >= prev.ibytes) ? (currentTotalIBytes - prev.ibytes) / timeDiffSec : 0.0;
-            m_uploadBytesPerSec = (currentTotalOBytes >= prev.obytes) ? (currentTotalOBytes - prev.obytes) / timeDiffSec : 0.0;
+            m_downloadBytesPerSec = (currentTotalIBytes >= prev.ibytes)
+                                        ? (currentTotalIBytes - prev.ibytes) / timeDiffSec
+                                        : 0.0;
+            m_uploadBytesPerSec = (currentTotalOBytes >= prev.obytes)
+                                      ? (currentTotalOBytes - prev.obytes) / timeDiffSec
+                                      : 0.0;
         }
     }
 
@@ -76,7 +79,8 @@ void NetworkMonitorMacOS::updateNetworkTraffic() {
 }
 
 void NetworkMonitorMacOS::updateActiveConnections() {
-    // Stubbed. In full implementation, parsing `lsof` or `netstat` or using libproc `proc_pidfdinfo` for sockets is needed
-    // Setting a fake but non-zero number for architecture testing
+    // Stubbed. In full implementation, parsing `lsof` or `netstat` or using libproc
+    // `proc_pidfdinfo` for sockets is needed Setting a fake but non-zero number for architecture
+    // testing
     m_activeConnections = 100;
 }

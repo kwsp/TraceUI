@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QObject>
 #include <QList>
+#include <QObject>
 #include <QtQml/qqmlregistration.h>
 
 class SystemMonitor : public QObject {
@@ -26,7 +26,7 @@ class SystemMonitor : public QObject {
     Q_PROPERTY(int totalTasks READ totalTasks NOTIFY dataUpdated)
 
 public:
-    explicit SystemMonitor(QObject* parent = nullptr);
+    explicit SystemMonitor(QObject *parent = nullptr);
     SystemMonitor(const SystemMonitor &) = delete;
     SystemMonitor &operator=(const SystemMonitor &) = delete;
     SystemMonitor(SystemMonitor &&) = delete;

@@ -1,11 +1,13 @@
 #include <QtGlobal>
 #ifndef Q_OS_MACOS
-int main(int, char*[]) { return 0; }
+int main(int, char *[]) {
+    return 0;
+}
 #else
-#include <QtTest>
+#include "backend/macos/NetworkMonitorMacOS.h"
 #include <QCoreApplication>
 #include <QThread>
-#include "backend/macos/NetworkMonitorMacOS.h"
+#include <QtTest>
 
 class NetworkMonitorTest : public QObject {
     Q_OBJECT
@@ -21,8 +23,8 @@ private slots:
         NetworkMonitorMacOS monitor;
         monitor.update();
         QThread::msleep(100);
-        monitor.update(); 
-        
+        monitor.update();
+
         QVERIFY(monitor.downloadBytesPerSec() >= 0.0);
         QVERIFY(monitor.uploadBytesPerSec() >= 0.0);
         QVERIFY(monitor.activeConnections() >= 0);

@@ -14,7 +14,8 @@
 /// Custom deleter for VTerm, enabling use with std::unique_ptr.
 struct VTermDeleter {
     void operator()(VTerm *vt) const {
-        if (vt) vterm_free(vt);
+        if (vt)
+            vterm_free(vt);
     }
 };
 
@@ -83,5 +84,5 @@ private:
     QSocketNotifier *m_notifier = nullptr;
 
     VTermPtr m_vt;
-    VTermScreen *m_vts = nullptr;  // Owned by m_vt, not freed separately
+    VTermScreen *m_vts = nullptr; // Owned by m_vt, not freed separately
 };

@@ -18,18 +18,18 @@ class NetworkMonitor : public QObject {
     Q_PROPERTY(double packetLossPct READ packetLossPct NOTIFY dataUpdated)
 
 public:
-    explicit NetworkMonitor(QObject* parent = nullptr);
+    explicit NetworkMonitor(QObject *parent = nullptr);
     virtual ~NetworkMonitor() = default;
 
-    [[nodiscard]] double  downloadBytesPerSec() const;
-    [[nodiscard]] double  uploadBytesPerSec() const;
-    [[nodiscard]] int     activeConnections() const;
+    [[nodiscard]] double downloadBytesPerSec() const;
+    [[nodiscard]] double uploadBytesPerSec() const;
+    [[nodiscard]] int activeConnections() const;
     [[nodiscard]] QString mainInterface() const;
-    [[nodiscard]] bool    vpnActive() const;
+    [[nodiscard]] bool vpnActive() const;
     [[nodiscard]] QString ipv4Address() const;
-    [[nodiscard]] bool    isOnline() const;
-    [[nodiscard]] int     pingMs() const;
-    [[nodiscard]] double  packetLossPct() const;
+    [[nodiscard]] bool isOnline() const;
+    [[nodiscard]] int pingMs() const;
+    [[nodiscard]] double packetLossPct() const;
 
     virtual void update() = 0;
 

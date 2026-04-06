@@ -7,12 +7,12 @@
 #include <pty.h>
 #endif
 
-#include <unistd.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
-#include <pwd.h>
+#include <unistd.h>
 
 // ── libvterm callbacks (C linkage style, static) ────────────────────
 
@@ -36,14 +36,14 @@ static int screen_settermprop(VTermProp /*prop*/, VTermValue * /*val*/, void * /
 
 // NOLINTBEGIN(readability-redundant-member-init)
 static const VTermScreenCallbacks screen_callbacks = {
-    .damage       = screen_damage,
-    .moverect     = nullptr,
-    .movecursor   = screen_movecursor,
-    .settermprop  = screen_settermprop,
-    .bell         = nullptr,
-    .resize       = nullptr,
-    .sb_pushline  = nullptr,
-    .sb_popline   = nullptr,
+    .damage = screen_damage,
+    .moverect = nullptr,
+    .movecursor = screen_movecursor,
+    .settermprop = screen_settermprop,
+    .bell = nullptr,
+    .resize = nullptr,
+    .sb_pushline = nullptr,
+    .sb_popline = nullptr,
 };
 // NOLINTEND(readability-redundant-member-init)
 
@@ -54,9 +54,7 @@ static void on_vterm_output(const char *s, size_t len, void *user) {
 
 // ── TerminalBackend ─────────────────────────────────────────────────
 
-TerminalBackend::TerminalBackend(QObject *parent)
-    : QObject(parent)
-{
+TerminalBackend::TerminalBackend(QObject *parent) : QObject(parent) {
     setupVTerm();
 
     m_renderTimer.setInterval(16); // ~60 FPS
@@ -95,9 +93,9 @@ static QString vtermColorToHex(const VTermScreen *screen, VTermColor col) {
         vterm_screen_convert_color_to_rgb(screen, &col);
     }
     return QStringLiteral("#%1%2%3")
-        .arg(col.rgb.red,   2, 16, QLatin1Char('0'))
+        .arg(col.rgb.red, 2, 16, QLatin1Char('0'))
         .arg(col.rgb.green, 2, 16, QLatin1Char('0'))
-        .arg(col.rgb.blue,  2, 16, QLatin1Char('0'));
+        .arg(col.rgb.blue, 2, 16, QLatin1Char('0'));
 }
 
 // Helper: append a QChar for a uint32_t codepoint.
@@ -119,10 +117,14 @@ static void appendCellText(QString &out, const VTermScreenCell &cell) {
     for (int i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i]; ++i) {
         const auto c = cell.chars[i];
         // HTML-escape special characters
-        if (c == '<')       out.append(QStringLiteral("&lt;"));
-        else if (c == '>')  out.append(QStringLiteral("&gt;"));
-        else if (c == '&')  out.append(QStringLiteral("&amp;"));
-        else                appendCodepoint(out, c);
+        if (c == '<')
+            out.append(QStringLiteral("&lt;"));
+        else if (c == '>')
+            out.append(QStringLiteral("&gt;"));
+        else if (c == '&')
+            out.append(QStringLiteral("&amp;"));
+        else
+            appendCodepoint(out, c);
     }
 }
 
@@ -136,8 +138,8 @@ void TerminalBackend::setupVTerm() {
 
     // Set default fg/bg to match Neo-Kitsch theme
     VTermColor defaultFg, defaultBg;
-    vterm_color_rgb(&defaultFg, 0xe8, 0xdf, 0xc0);  // Style.textPrimary
-    vterm_color_rgb(&defaultBg, 0x0d, 0x0b, 0x0e);  // Style.backgroundColor
+    vterm_color_rgb(&defaultFg, 0xe8, 0xdf, 0xc0); // Style.textPrimary
+    vterm_color_rgb(&defaultBg, 0x0d, 0x0b, 0x0e); // Style.backgroundColor
     vterm_screen_set_default_colors(m_vts, &defaultFg, &defaultBg);
 
     vterm_screen_reset(m_vts, 1);
@@ -162,7 +164,7 @@ void TerminalBackend::start(const QString &shell) {
 
     qDebug() << "Starting shell:" << shellToUse << "rows:" << m_rows << "cols:" << m_cols;
 
-    struct winsize ws {};
+    struct winsize ws{};
     ws.ws_row = static_cast<unsigned short>(m_rows);
     ws.ws_col = static_cast<unsigned short>(m_cols);
 
@@ -194,8 +196,7 @@ void TerminalBackend::start(const QString &shell) {
     fcntl(m_masterFd.get(), F_SETFL, O_NONBLOCK);
 
     m_notifier = new QSocketNotifier(m_masterFd.get(), QSocketNotifier::Read, this);
-    connect(m_notifier, &QSocketNotifier::activated,
-            this, &TerminalBackend::onPtyReadReady);
+    connect(m_notifier, &QSocketNotifier::activated, this, &TerminalBackend::onPtyReadReady);
 
     qDebug() << "Shell started: PID" << m_childPid << "FD" << m_masterFd.get();
 }
@@ -217,69 +218,84 @@ void TerminalBackend::onPtyReadReady() {
 }
 
 void TerminalBackend::sendInput(const QString &input) {
-    if (!m_masterFd.isValid()) return;
+    if (!m_masterFd.isValid())
+        return;
 
     const QByteArray data = input.toUtf8();
-    const auto written = write(m_masterFd.get(), data.constData(), static_cast<size_t>(data.size()));
+    const auto written =
+        write(m_masterFd.get(), data.constData(), static_cast<size_t>(data.size()));
     if (written < 0) {
         qWarning() << "PTY write failed:" << strerror(errno);
     }
 }
 
 void TerminalBackend::writeToPty(const QByteArray &data) {
-    if (!m_masterFd.isValid()) return;
+    if (!m_masterFd.isValid())
+        return;
 
-    const auto written = write(m_masterFd.get(), data.constData(), static_cast<size_t>(data.size()));
+    const auto written =
+        write(m_masterFd.get(), data.constData(), static_cast<size_t>(data.size()));
     if (written < 0) {
         qWarning() << "PTY write (vterm output) failed:" << strerror(errno);
     }
 }
 
 void TerminalBackend::setRows(int rows) {
-    if (rows <= 0 || m_rows == rows) return;
+    if (rows <= 0 || m_rows == rows)
+        return;
     m_rows = rows;
-    if (m_vt) vterm_set_size(m_vt.get(), m_rows, m_cols);
+    if (m_vt)
+        vterm_set_size(m_vt.get(), m_rows, m_cols);
     resizePty();
     emit rowsChanged();
 }
 
 void TerminalBackend::setCols(int cols) {
-    if (cols <= 0 || m_cols == cols) return;
+    if (cols <= 0 || m_cols == cols)
+        return;
     m_cols = cols;
-    if (m_vt) vterm_set_size(m_vt.get(), m_rows, m_cols);
+    if (m_vt)
+        vterm_set_size(m_vt.get(), m_rows, m_cols);
     resizePty();
     emit colsChanged();
 }
 
 void TerminalBackend::resize(int rows, int cols) {
-    if (rows <= 0 || cols <= 0) return;
+    if (rows <= 0 || cols <= 0)
+        return;
     const bool changed = (m_rows != rows || m_cols != cols);
-    if (!changed) return;
+    if (!changed)
+        return;
 
     const bool rowsChanged = (m_rows != rows);
     const bool colsChanged = (m_cols != cols);
     m_rows = rows;
     m_cols = cols;
 
-    if (m_vt) vterm_set_size(m_vt.get(), m_rows, m_cols);
+    if (m_vt)
+        vterm_set_size(m_vt.get(), m_rows, m_cols);
     resizePty();
 
-    if (rowsChanged) emit this->rowsChanged();
-    if (colsChanged) emit this->colsChanged();
+    if (rowsChanged)
+        emit this->rowsChanged();
+    if (colsChanged)
+        emit this->colsChanged();
 }
 
 void TerminalBackend::resizePty() {
-    if (!m_masterFd.isValid()) return;
+    if (!m_masterFd.isValid())
+        return;
 
-    struct winsize ws {};
+    struct winsize ws{};
     ws.ws_row = static_cast<unsigned short>(m_rows);
     ws.ws_col = static_cast<unsigned short>(m_cols);
     ioctl(m_masterFd.get(), TIOCSWINSZ, &ws);
 }
 
 void TerminalBackend::markRowDirty(int row) {
-    if (row < 0 || row >= m_rows) return;
-    
+    if (row < 0 || row >= m_rows)
+        return;
+
     if (m_dirtyStartRow == -1) {
         m_dirtyStartRow = row;
         m_dirtyEndRow = row;
@@ -287,7 +303,7 @@ void TerminalBackend::markRowDirty(int row) {
         m_dirtyStartRow = std::min(m_dirtyStartRow, row);
         m_dirtyEndRow = std::max(m_dirtyEndRow, row);
     }
-    
+
     if (!m_renderTimer.isActive()) {
         m_renderTimer.start();
     }
@@ -302,21 +318,23 @@ void TerminalBackend::flushScreenUpdates() {
 }
 
 void TerminalBackend::setCursorPos(int row, int col) {
-    if (m_cursorRow == row && m_cursorCol == col) return;
+    if (m_cursorRow == row && m_cursorCol == col)
+        return;
     m_cursorRow = row;
     m_cursorCol = col;
     emit cursorMoved();
 }
 
 QString TerminalBackend::getLineText(int row) const {
-    if (row < 0 || row >= m_rows) return {};
+    if (row < 0 || row >= m_rows)
+        return {};
 
     QString line;
     line.reserve(m_cols);
 
     for (int col = 0; col < m_cols; ++col) {
         VTermScreenCell cell;
-        const VTermPos pos = { row, col };
+        const VTermPos pos = {row, col};
         vterm_screen_get_cell(m_vts, pos, &cell);
 
         if (cell.chars[0] == 0) {
@@ -337,7 +355,8 @@ QString TerminalBackend::getLineText(int row) const {
 }
 
 QString TerminalBackend::getLineHtml(int row) const {
-    if (row < 0 || row >= m_rows) return {};
+    if (row < 0 || row >= m_rows)
+        return {};
 
     // Pre-allocate generously: typical line ~cols chars + markup overhead
     QString html;
@@ -359,7 +378,7 @@ QString TerminalBackend::getLineHtml(int row) const {
 
     for (int col = 0; col < m_cols; ++col) {
         VTermScreenCell cell;
-        const VTermPos pos = { row, col };
+        const VTermPos pos = {row, col};
         vterm_screen_get_cell(m_vts, pos, &cell);
 
         // Resolve colors
@@ -372,8 +391,8 @@ QString TerminalBackend::getLineHtml(int row) const {
         const bool underline = cell.attrs.underline != 0;
 
         // Start a new span if attributes changed
-        if (fg != curFg || bg != curBg || bold != curBold ||
-            italic != curItalic || underline != curUnderline) {
+        if (fg != curFg || bg != curBg || bold != curBold || italic != curItalic ||
+            underline != curUnderline) {
             closeSpan();
             curFg = fg;
             curBg = bg;

@@ -1,6 +1,6 @@
-#include <QtTest>
 #include "TerminalBackend.h"
 #include "TerminalModel.h"
+#include <QtTest>
 
 class TerminalTest : public QObject {
     Q_OBJECT

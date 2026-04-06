@@ -2,7 +2,8 @@
 #include <unistd.h>
 
 FileDescriptor::~FileDescriptor() {
-    if (m_fd >= 0) ::close(m_fd);
+    if (m_fd >= 0)
+        ::close(m_fd);
 }
 
 FileDescriptor::FileDescriptor(FileDescriptor &&other) noexcept
@@ -21,6 +22,7 @@ int FileDescriptor::release() {
 }
 
 void FileDescriptor::reset(int fd) {
-    if (m_fd >= 0) ::close(m_fd);
+    if (m_fd >= 0)
+        ::close(m_fd);
     m_fd = fd;
 }

@@ -1,12 +1,18 @@
 #include "ProcessWatcher.h"
 
-ProcessWatcher::ProcessWatcher(QObject* parent) : QObject(parent) {}
+ProcessWatcher::ProcessWatcher(QObject *parent) : QObject(parent) {}
 
-ProcessListModel* ProcessWatcher::processes() { return &m_processModel; }
+ProcessListModel *ProcessWatcher::processes() {
+    return &m_processModel;
+}
 
-QVariantList ProcessWatcher::watchedServices() const { return m_watchedServices; }
+QVariantList ProcessWatcher::watchedServices() const {
+    return m_watchedServices;
+}
 
-bool ProcessWatcher::sortByCpu() const { return m_sortByCpu; }
+bool ProcessWatcher::sortByCpu() const {
+    return m_sortByCpu;
+}
 
 void ProcessWatcher::toggleSort() {
     m_sortByCpu = !m_sortByCpu;

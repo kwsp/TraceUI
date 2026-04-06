@@ -9,111 +9,102 @@
 static constexpr int kMaxProcesses = 20;
 static constexpr uint64_t kBytesPerMB = 1024ULL * 1024;
 
-ProcessWatcherMacOS::ProcessWatcherMacOS(QObject *parent)
-    : ProcessWatcher(parent) {
-  mach_timebase_info(&m_timebase);
-  m_coreCount = std::max(static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN)), 1);
-  m_pollTimer.start();
-  connect(&m_timer, &QTimer::timeout, this,
-          &ProcessWatcherMacOS::performUpdate);
-  connect(this, &ProcessWatcher::sortByCpuChanged, this,
-          &ProcessWatcherMacOS::sortAndPublish);
-  m_timer.start(3000);
+ProcessWatcherMacOS::ProcessWatcherMacOS(QObject *parent) : ProcessWatcher(parent) {
+    mach_timebase_info(&m_timebase);
+    m_coreCount = std::max(static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN)), 1);
+    m_pollTimer.start();
+    connect(&m_timer, &QTimer::timeout, this, &ProcessWatcherMacOS::performUpdate);
+    connect(this, &ProcessWatcher::sortByCpuChanged, this, &ProcessWatcherMacOS::sortAndPublish);
+    m_timer.start(3000);
 }
 
-void ProcessWatcherMacOS::update() { performUpdate(); }
+void ProcessWatcherMacOS::update() {
+    performUpdate();
+}
 
 void ProcessWatcherMacOS::sortAndPublish() {
-  if (sortByCpu())
-    std::sort(m_allEntries.begin(), m_allEntries.end(),
-              [](const ProcessEntry &a, const ProcessEntry &b) {
-                return a.cpuPct > b.cpuPct;
-              });
-  else
-    std::sort(m_allEntries.begin(), m_allEntries.end(),
-              [](const ProcessEntry &a, const ProcessEntry &b) {
-                return a.ramMB > b.ramMB;
-              });
+    if (sortByCpu())
+        std::sort(m_allEntries.begin(), m_allEntries.end(),
+                  [](const ProcessEntry &a, const ProcessEntry &b) { return a.cpuPct > b.cpuPct; });
+    else
+        std::sort(m_allEntries.begin(), m_allEntries.end(),
+                  [](const ProcessEntry &a, const ProcessEntry &b) { return a.ramMB > b.ramMB; });
 
-  const int limit =
-      std::min(static_cast<int>(m_allEntries.size()), kMaxProcesses);
-  QList<ProcessEntry> result;
-  result.reserve(limit);
-  for (int i = 0; i < limit; ++i)
-    result.append(m_allEntries[i]);
+    const int limit = std::min(static_cast<int>(m_allEntries.size()), kMaxProcesses);
+    QList<ProcessEntry> result;
+    result.reserve(limit);
+    for (int i = 0; i < limit; ++i)
+        result.append(m_allEntries[i]);
 
-  updateProcesses(std::move(result));
+    updateProcesses(std::move(result));
 }
 
 void ProcessWatcherMacOS::performUpdate() {
-  const auto elapsedNs = static_cast<uint64_t>(m_pollTimer.nsecsElapsed());
-  m_pollTimer.restart();
+    const auto elapsedNs = static_cast<uint64_t>(m_pollTimer.nsecsElapsed());
+    m_pollTimer.restart();
 
-  // Request all processes from sysctl (BSD API)
-  // https://man.openbsd.org/sysctl.2
-  int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
-  size_t size = 0;
-  if (sysctl(mib, 4, nullptr, &size, nullptr, 0) != 0 || size == 0)
-    return;
+    // Request all processes from sysctl (BSD API)
+    // https://man.openbsd.org/sysctl.2
+    int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+    size_t size = 0;
+    if (sysctl(mib, 4, nullptr, &size, nullptr, 0) != 0 || size == 0)
+        return;
 
-  const size_t procCount = size / sizeof(kinfo_proc);
-  std::vector<kinfo_proc> procs(procCount + 4);
-  if (sysctl(mib, 4, procs.data(), &size, nullptr, 0) != 0)
-    return;
+    const size_t procCount = size / sizeof(kinfo_proc);
+    std::vector<kinfo_proc> procs(procCount + 4);
+    if (sysctl(mib, 4, procs.data(), &size, nullptr, 0) != 0)
+        return;
 
-  QHash<pid_t, uint64_t> newCpuTimes;
-  newCpuTimes.reserve(procCount);
+    QHash<pid_t, uint64_t> newCpuTimes;
+    newCpuTimes.reserve(procCount);
 
-  m_allEntries.clear();
-  m_allEntries.reserve(procCount);
+    m_allEntries.clear();
+    m_allEntries.reserve(procCount);
 
-  for (size_t i = 0; i < procCount; ++i) {
-    const kinfo_proc &kp = procs[i];
-    const pid_t pid = kp.kp_proc.p_pid;
-    if (pid == 0)
-      continue;
+    for (size_t i = 0; i < procCount; ++i) {
+        const kinfo_proc &kp = procs[i];
+        const pid_t pid = kp.kp_proc.p_pid;
+        if (pid == 0)
+            continue;
 
-    proc_taskinfo pti{};
-    if (proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &pti, sizeof(pti)) !=
-        sizeof(pti))
-      continue;
+        proc_taskinfo pti{};
+        if (proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &pti, sizeof(pti)) != sizeof(pti))
+            continue;
 
-    const uint64_t totalCpu = pti.pti_total_user + pti.pti_total_system;
-    newCpuTimes[pid] = totalCpu;
+        const uint64_t totalCpu = pti.pti_total_user + pti.pti_total_system;
+        newCpuTimes[pid] = totalCpu;
 
-    double cpuPct = 0.0;
-    if (elapsedNs > 0 && m_cpuTimes.contains(pid)) {
-      const uint64_t delta = totalCpu - m_cpuTimes[pid];
-      const double deltaNs =
-          static_cast<double>(delta) * m_timebase.numer / m_timebase.denom;
-      cpuPct = std::clamp(
-          deltaNs / (static_cast<double>(elapsedNs) * m_coreCount) * 100.0, 0.0,
-          100.0);
+        double cpuPct = 0.0;
+        if (elapsedNs > 0 && m_cpuTimes.contains(pid)) {
+            const uint64_t delta = totalCpu - m_cpuTimes[pid];
+            const double deltaNs = static_cast<double>(delta) * m_timebase.numer / m_timebase.denom;
+            cpuPct = std::clamp(deltaNs / (static_cast<double>(elapsedNs) * m_coreCount) * 100.0,
+                                0.0, 100.0);
+        }
+
+        if (!m_nameCache.contains(pid)) {
+            char buf[PROC_PIDPATHINFO_MAXSIZE];
+            if (proc_pidpath(pid, buf, sizeof(buf)) > 0)
+                m_nameCache[pid] = QString::fromUtf8(buf).section('/', -1);
+            else
+                m_nameCache[pid] = QString::fromUtf8(kp.kp_proc.p_comm);
+            if (m_nameCache[pid].isEmpty())
+                m_nameCache[pid] = QStringLiteral("Unknown");
+        }
+
+        m_allEntries.append(
+            ProcessEntry{.name = m_nameCache[pid],
+                         .pid = pid,
+                         .ramMB = static_cast<int>(pti.pti_resident_size / kBytesPerMB),
+                         .cpuPct = cpuPct});
     }
 
-    if (!m_nameCache.contains(pid)) {
-      char buf[PROC_PIDPATHINFO_MAXSIZE];
-      if (proc_pidpath(pid, buf, sizeof(buf)) > 0)
-        m_nameCache[pid] = QString::fromUtf8(buf).section('/', -1);
-      else
-        m_nameCache[pid] = QString::fromUtf8(kp.kp_proc.p_comm);
-      if (m_nameCache[pid].isEmpty())
-        m_nameCache[pid] = QStringLiteral("Unknown");
+    for (auto it = m_nameCache.begin(); it != m_nameCache.end();) {
+        it = newCpuTimes.contains(it.key()) ? std::next(it) : m_nameCache.erase(it);
     }
 
-    m_allEntries.append(ProcessEntry{
-        .name = m_nameCache[pid],
-        .pid = pid,
-        .ramMB = static_cast<int>(pti.pti_resident_size / kBytesPerMB),
-        .cpuPct = cpuPct});
-  }
+    m_cpuTimes = std::move(newCpuTimes);
 
-  for (auto it = m_nameCache.begin(); it != m_nameCache.end();) {
-    it = newCpuTimes.contains(it.key()) ? std::next(it) : m_nameCache.erase(it);
-  }
-
-  m_cpuTimes = std::move(newCpuTimes);
-
-  sortAndPublish();
-  emit dataUpdated();
+    sortAndPublish();
+    emit dataUpdated();
 }
