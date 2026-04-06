@@ -97,8 +97,8 @@ Item {
             Text {
                 width: parent.width - cpuUsageLabel.width
                 horizontalAlignment: Text.AlignRight
-                text: SystemMonitor.cpuName
-                color: Style.textPrimary
+                text: SystemMonitor.cpuUsageTotal.toFixed(1) + "%"
+                color: Style.accentGold
                 font.family: Style.fontData
                 font.pixelSize: Style.sizeData
             }
