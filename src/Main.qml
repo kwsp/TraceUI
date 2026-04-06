@@ -49,16 +49,16 @@ Window {
         TilingPanelWrapper {
             id: wrapperLeft
             panelId: "system"
-            SplitView.fillWidth: true
-            SplitView.minimumWidth: 400
+            SplitView.preferredWidth: 500
+            SplitView.minimumWidth: 300
         }
 
-        // Right Column (Network)
+        // Right Column (Network) - fills remaining space
         TilingPanelWrapper {
             id: wrapperRight
             panelId: "network"
             SplitView.fillWidth: true
-            SplitView.minimumWidth: 400
+            SplitView.minimumWidth: 300
         }
 
         // Terminal Column (Optional)
@@ -66,7 +66,7 @@ Window {
             id: wrapperTerm
             panelId: "terminal"
             visible: buildTerminal
-            SplitView.preferredWidth: 600
+            SplitView.preferredWidth: 500
             SplitView.minimumWidth: 300
         }
 
