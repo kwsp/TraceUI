@@ -31,5 +31,5 @@ private:
     QHash<pid_t, QString> m_nameCache;
     QList<ProcessEntry> m_allEntries;
     mach_timebase_info_data_t m_timebase{};
-    int m_coreCount = 1;
+    int m_coreCount{1};
 };

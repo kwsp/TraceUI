@@ -19,6 +19,10 @@ class NetworkMonitor : public QObject {
 
 public:
     explicit NetworkMonitor(QObject *parent = nullptr);
+    NetworkMonitor(const NetworkMonitor &) = delete;
+    NetworkMonitor &operator=(const NetworkMonitor &) = delete;
+    NetworkMonitor(NetworkMonitor &&) = delete;
+    NetworkMonitor &operator=(NetworkMonitor &&) = delete;
     virtual ~NetworkMonitor() = default;
 
     [[nodiscard]] double downloadBytesPerSec() const;
@@ -37,13 +41,13 @@ signals:
     void dataUpdated();
 
 protected:
-    double m_downloadBytesPerSec = 0.0;
-    double m_uploadBytesPerSec = 0.0;
-    int m_activeConnections = 0;
-    QString m_interface = "en0";
-    bool m_vpnActive = false;
-    QString m_ipv4Address = "0.0.0.0";
-    bool m_isOnline = false;
-    int m_pingMs = 0;
-    double m_packetLossPct = 0.0;
+    double m_downloadBytesPerSec{0.0};
+    double m_uploadBytesPerSec{0.0};
+    int m_activeConnections{0};
+    QString m_interface{"en0"};
+    bool m_vpnActive{false};
+    QString m_ipv4Address{"0.0.0.0"};
+    bool m_isOnline{false};
+    int m_pingMs{0};
+    double m_packetLossPct{0.0};
 };

@@ -10,6 +10,10 @@ class NetworkMonitorMacOS : public NetworkMonitor {
 
 public:
     explicit NetworkMonitorMacOS(QObject *parent = nullptr);
+    NetworkMonitorMacOS(const NetworkMonitorMacOS &) = delete;
+    NetworkMonitorMacOS &operator=(const NetworkMonitorMacOS &) = delete;
+    NetworkMonitorMacOS(NetworkMonitorMacOS &&) = delete;
+    NetworkMonitorMacOS &operator=(NetworkMonitorMacOS &&) = delete;
     ~NetworkMonitorMacOS() override = default;
 
     void update() override;
@@ -33,9 +37,9 @@ private:
     int m_pingsLost = 0;
 
     struct TrafficData {
-        uint64_t ibytes = 0;
-        uint64_t obytes = 0;
-        uint64_t timestampMs = 0;
+        uint64_t ibytes{};
+        uint64_t obytes{};
+        uint64_t timestampMs{};
     };
 
     QMap<QString, TrafficData> m_prevTrafficData;
