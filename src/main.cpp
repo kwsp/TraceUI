@@ -1,10 +1,17 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickWindow>
 #include <QtQml/qqml.h>
 
 #include "backend/CpuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
+#include "config.h"
+
+#if BUILD_TERMINAL
+#include "terminal/TerminalBackend.h"
+#include "terminal/TerminalModel.h"
+#endif
 
 #ifdef Q_OS_MACOS
 #include "backend/macos/NetworkMonitorMacOS.h"
@@ -19,6 +26,10 @@
 
 // Import the static EncomGlobe QML plugin
 Q_IMPORT_QML_PLUGIN(EncomGlobePlugin)
+
+#if BUILD_TERMINAL
+Q_IMPORT_QML_PLUGIN(TraceUITerminalPlugin)
+#endif
 
 int main(int argc, char *argv[]) {
   QQuickWindow::setDefaultAlphaBuffer(true);
@@ -48,6 +59,9 @@ int main(int argc, char *argv[]) {
   qmlRegisterType<CpuHistoryProvider>("TraceUI", 0, 1, "CpuHistoryProvider");
 
   QQmlApplicationEngine engine;
+  engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+  const bool buildTerminal = BUILD_TERMINAL != 0;
+  engine.rootContext()->setContextProperty(QStringLiteral("buildTerminal"), buildTerminal);
   engine.loadFromModule(APP_MODULE_NAME, "Main");
 
   return QGuiApplication::exec();

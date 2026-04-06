@@ -1,3 +1,6 @@
 [submodule "external/encom-globe"]
 	path = external/encom-globe
 	url = https://github.com/kwsp/encom-globe.cpp.git
+[submodule "external/libvterm"]
+	path = external/libvterm
+	url = https://github.com/neovim/libvterm.git

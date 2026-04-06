@@ -4,6 +4,8 @@ import TraceUI
 Window {
     id: root
 
+    // buildTerminal is now a context property
+
     flags: Qt.FramelessWindowHint
     visibility: Window.FullScreen
     color: Style.backgroundColor
@@ -59,24 +61,17 @@ Window {
         anchors.topMargin: 24
     }
 
-    // Terminal Placeholder (Right 2/3)
-    Rectangle {
-        id: terminalPlaceholder
+    // Terminal Panel (Right 2/3)
+    Loader {
+        id: terminalLoader
         anchors.left: globePanel.right
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.margins: 24
-        color: Qt.rgba(Style.accentGold.r, Style.accentGold.g, Style.accentGold.b, 0.05)
-        border.color: Style.borderDefault
-        border.width: 1
-
-        Text {
-            anchors.centerIn: parent
-            text: "TERMINAL SYSTEM OFFLINE"
-            color: Style.textDim
-            font.family: Style.fontDisplay
-            font.pixelSize: 32
-        }
+        focus: true
+        active: buildTerminal
+        // URI TraceUITerminal maps to folder TraceUITerminal in the QRC
+        source: buildTerminal ? "qrc:/qt/qml/TraceUITerminal/TerminalPanel.qml" : ""
     }
 }
