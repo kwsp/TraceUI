@@ -20,12 +20,12 @@ Item {
         scale: 1.1
         viewAngle: 0.2
         
-        baseColor: Qt.rgba(globePanel.baseColor.r, globePanel.baseColor.g, globePanel.baseColor.b, 1.0).toString()
-        pinColor: "#00eeee"
-        markerColor: globePanel.baseColor.toString()
-        satelliteColor: "#ff4444"
-        introLinesColor: "#8FD8D8"
-        markerSize: 0.6
+        baseColor: Style.accentGold
+        pinColor: Style.accentSilver
+        markerColor: Style.accentGold
+        satelliteColor: Style.accentGold
+        introLinesColor: Style.accentSilver
+        markerSize: 0.2
         pinHeadSize: 0.3
         showLabels: false
         introDuration: 2000
