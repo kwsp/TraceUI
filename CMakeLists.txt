@@ -14,6 +14,26 @@ project(TraceUI
 enable_testing()
 
 add_subdirectory(external/encom-globe)
-add_subdirectory(external/libvterm)
+
+# libvterm doesn't have its own CMakeLists.txt, so we define it here
+add_library(vterm STATIC
+  external/libvterm/src/encoding.c
+  external/libvterm/src/keyboard.c
+  external/libvterm/src/mouse.c
+  external/libvterm/src/parser.c
+  external/libvterm/src/pen.c
+  external/libvterm/src/screen.c
+  external/libvterm/src/state.c
+  external/libvterm/src/unicode.c
+  external/libvterm/src/vterm.c
+)
+target_include_directories(vterm PUBLIC external/libvterm/include)
+target_include_directories(vterm PRIVATE external/libvterm/src)
+if(MSVC)
+  target_compile_definitions(vterm PRIVATE _CRT_SECURE_NO_WARNINGS)
+else()
+  target_compile_options(vterm PRIVATE -Wall)
+endif()
+
 add_subdirectory(src)
 add_subdirectory(tests)
