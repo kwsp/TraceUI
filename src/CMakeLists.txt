@@ -84,7 +84,6 @@ configure_file(config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}  # for config.h
   ${CMAKE_CURRENT_SOURCE_DIR}/backend  # for qml to register C++ types
-  ${CMAKE_SOURCE_DIR}/external/libvterm/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
