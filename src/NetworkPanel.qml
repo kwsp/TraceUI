@@ -4,8 +4,8 @@ import EncomGlobe
 
 Item {
     id: root
-    width: 400
-    height: 700
+    implicitWidth: 400
+    implicitHeight: 700
 
     NetworkHistoryProvider {
         id: netHistProvider

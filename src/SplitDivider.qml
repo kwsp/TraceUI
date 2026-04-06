@@ -9,16 +9,16 @@ Rectangle {
     // True for horizontal SplitView (handle is vertical bar), false for vertical.
     property bool vertical: true
 
-    implicitWidth:  vertical ? 8 : parent.width
-    implicitHeight: vertical ? parent.height : 8
+    implicitWidth:  vertical ? 8 : 16
+    implicitHeight: vertical ? 16 : 8
 
     color: "transparent"
 
     // The visible line
     Rectangle {
         anchors.centerIn: parent
-        width:  root.vertical ? 1 : parent.width
-        height: root.vertical ? parent.height : 1
+        width:  root.vertical ? 2 : parent.width
+        height: root.vertical ? parent.height : 2
         color: hoverHandler.hovered || SplitHandle.pressed
                ? Style.accentGold
                : Style.borderDefault
@@ -28,7 +28,7 @@ Rectangle {
         }
     }
 
-    // Wider invisible hit area so the handle is easy to grab
+    // Hover handler for cursor
     HoverHandler {
         id: hoverHandler
         cursorShape: root.vertical ? Qt.SplitHCursor : Qt.SplitVCursor
