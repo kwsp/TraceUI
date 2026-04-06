@@ -76,7 +76,7 @@ void NetworkMonitorMacOS::startPing() {
 
     m_pingInFlight = true;
     // Single ping with 2 second timeout (-t on macOS, -W is waittime in ms)
-    m_pingProcess->start("ping", {"-c", "1", "-t", "2", "1.1.1.1"});
+    m_pingProcess->start("/sbin/ping", {"-c", "1", "-t", "2", "1.1.1.1"});
 }
 
 void NetworkMonitorMacOS::onPingFinished(int exitCode, QProcess::ExitStatus /*status*/) {
@@ -85,18 +85,22 @@ void NetworkMonitorMacOS::onPingFinished(int exitCode, QProcess::ExitStatus /*st
     // Sliding window for packet loss
     m_pingsSent++;
     if (m_pingsSent > kPingWindowSize) {
-        // Decay: halve the counters to keep the window sliding
         m_pingsSent /= 2;
         m_pingsLost /= 2;
     }
 
+    QString output = m_pingProcess->readAllStandardOutput();
+    QString errOutput = m_pingProcess->readAllStandardError();
+
     if (exitCode != 0) {
+        qDebug() << "[ping] exit code:" << exitCode
+                 << "stdout:" << output.left(200)
+                 << "stderr:" << errOutput.left(200);
         m_pingsLost++;
         m_pingMs = -1;
     } else {
         // Parse round-trip time from ping output
         // Example line: "64 bytes from 1.1.1.1: icmp_seq=0 ttl=55 time=4.123 ms"
-        QString output = m_pingProcess->readAllStandardOutput();
         static QRegularExpression re(R"(time[=<](\d+\.?\d*)\s*ms)");
         QRegularExpressionMatch match = re.match(output);
         if (match.hasMatch()) {
