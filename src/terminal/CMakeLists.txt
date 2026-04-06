@@ -1,5 +1,5 @@
+qt6_add_library(TraceUITerminal STATIC)
 qt6_add_qml_module(TraceUITerminal
-    STATIC
     URI TraceUI.Terminal
     VERSION 1.0
     QML_FILES
