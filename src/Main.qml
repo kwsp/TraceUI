@@ -77,6 +77,10 @@ Window {
             SplitView.minimumWidth: 300
             clip: true
             opacity: 0
+            
+            // Reveal clip: grows from center during animation
+            property real revealCenterY: height / 2
+            property real revealHalfHeight: 0
         }
 
         // Restore layout state on startup
@@ -88,45 +92,85 @@ Window {
         }
     }
 
-    // ── Terminal reveal line ─────────────────────────────────────────────────
-    // A thin horizontal line that appears where the terminal will be,
-    // then expands upward to reveal the terminal content.
+    // ── Terminal reveal: two lines expanding from center ─────────────────────
+    // A horizontal line appears at center of terminal area, then splits into
+    // two lines moving up/down to reveal terminal content between them.
+
+    property real termRevealCenterY: {
+        // Center Y of terminal column in root coordinates
+        let termPos = wrapperTerm.mapToItem(root.contentItem, 0, 0)
+        return termPos.y + wrapperTerm.height / 2
+    }
+    property real termRevealX: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
+    property real termRevealWidth: wrapperTerm.width
+    property real termRevealHalfHeight: 0  // grows during expansion
+
+    // Top line (moves upward)
     Rectangle {
-        id: termRevealLine
+        id: termLineTop
         visible: buildTerminal && animPhase >= 1 && animPhase <= 2
         z: 500
-
-        // Position: bottom of the terminal column area
-        y: root.height - mainSplit.anchors.margins
-        x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
-        width: wrapperTerm.width
-        height: 1
+        x: root.termRevealX
+        y: root.termRevealCenterY - root.termRevealHalfHeight
+        width: root.termRevealWidth
+        height: 2
         color: Style.accentGold
         opacity: 0
+    }
 
-        // Phase 1: Line appears
-        SequentialAnimation {
-            id: termLineAnim
+    // Bottom line (moves downward)
+    Rectangle {
+        id: termLineBottom
+        visible: buildTerminal && animPhase >= 1 && animPhase <= 2
+        z: 500
+        x: root.termRevealX
+        y: root.termRevealCenterY + root.termRevealHalfHeight - 2
+        width: root.termRevealWidth
+        height: 2
+        color: Style.accentGold
+        opacity: 0
+    }
+
+    // Phase 1: Center line appears (both lines at same position)
+    SequentialAnimation {
+        id: termLineAnim
+        ParallelAnimation {
             NumberAnimation {
-                target: termRevealLine
+                target: termLineTop
                 property: "opacity"
                 from: 0; to: 1
                 duration: AnimConfig.termLineAppearDur
             }
-            ScriptAction { script: root.animPhase = 2 }
+            NumberAnimation {
+                target: termLineBottom
+                property: "opacity"
+                from: 0; to: 1
+                duration: AnimConfig.termLineAppearDur
+            }
         }
+        ScriptAction { script: root.animPhase = 2 }
     }
 
-    // ── Terminal expand animation ────────────────────────────────────────────
-    NumberAnimation {
+    // Phase 2: Lines expand outward (up/down), revealing terminal
+    ParallelAnimation {
         id: termExpandAnim
-        target: wrapperTerm
-        property: "opacity"
-        from: 0; to: 1
-        duration: AnimConfig.termExpandDur
-        easing.type: AnimConfig.termExpandEasing
+        NumberAnimation {
+            target: root
+            property: "termRevealHalfHeight"
+            from: 1; to: wrapperTerm.height / 2
+            duration: AnimConfig.termExpandDur
+            easing.type: AnimConfig.termExpandEasing
+        }
+        NumberAnimation {
+            target: wrapperTerm
+            property: "opacity"
+            from: 0; to: 1
+            duration: AnimConfig.termExpandDur
+            easing.type: AnimConfig.termExpandEasing
+        }
         onFinished: {
-            termRevealLine.visible = false
+            termLineTop.visible = false
+            termLineBottom.visible = false
             root.animPhase = 3
         }
     }
