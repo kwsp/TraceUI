@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
   qmlRegisterType<CpuHistoryProvider>("TraceUI", 0, 1, "CpuHistoryProvider");
 
   QQmlApplicationEngine engine;
+  engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
   engine.setInitialProperties(QVariantMap{{QStringLiteral("buildTerminal"), BUILD_TERMINAL != 0}});
   engine.loadFromModule(APP_MODULE_NAME, "Main");
 

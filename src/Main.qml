@@ -71,7 +71,7 @@ Window {
         anchors.margins: 24
         focus: true
         active: root.buildTerminal
-        // Using relative path to the module component
-        source: root.buildTerminal ? "terminal/TerminalPanel.qml" : ""
+        // URI TraceUI.Terminal maps to folder Terminal relative to URI TraceUI
+        source: root.buildTerminal ? "Terminal/TerminalPanel.qml" : ""
     }
 }
