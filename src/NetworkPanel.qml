@@ -24,124 +24,120 @@ Item {
         title: "NETWORK"
     }
 
+    // Section 1: Network Status (top)
     Column {
-        anchors.fill: parent
+        id: statusSection
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 15
-        anchors.topMargin: 25 // Make room for top bracket/title
-        spacing: 20
+        anchors.topMargin: 30
+        spacing: 5
 
-        // 1. Network Status
-        Column {
+        Text {
+            text: "NETWORK STATUS"
+            color: Style.textLabel
+            font.family: Style.fontData
+            font.pixelSize: Style.sizeHeader
+            font.bold: true
+        }
+
+        Grid {
+            columns: 2
             width: parent.width
-            spacing: 5
-
-            Text {
-                text: "NETWORK STATUS"
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeHeader
-                font.bold: true
+            spacing: 10
+            
+            Column {
+                Text { text: "IPV4 ADDRESS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                Text { text: NetworkMonitor.ipv4Address; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
+            Column {
+                Text { text: "STATE / ONLINE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                Text { text: NetworkMonitor.isOnline ? "ONLINE" : "OFFLINE"; color: NetworkMonitor.isOnline ? Style.accentGold : Style.accentError; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+            }
+            Column {
+                Text { text: "PING RESPONSE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                Text { text: NetworkMonitor.pingMs.toString() + " MS"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+            }
+            Column {
+                Text { text: "PACKET LOSS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                Text { text: (NetworkMonitor.packetLossPct * 100).toFixed(1) + " %"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+            }
+        }
+    }
 
-            Grid {
-                columns: 2
-                width: parent.width
-                spacing: 10
-                
-                Column {
-                    Text { text: "IPV4 ADDRESS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                    Text { text: NetworkMonitor.ipv4Address; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
-                }
-                Column {
-                    Text { text: "STATE / ONLINE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                    Text { text: NetworkMonitor.isOnline ? "ONLINE" : "OFFLINE"; color: NetworkMonitor.isOnline ? Style.accentGold : Style.accentError; font.pixelSize: Style.sizeData; font.family: Style.fontData }
-                }
-                Column {
-                    Text { text: "PING RESPONSE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                    Text { text: NetworkMonitor.pingMs.toString() + " MS"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
-                }
-                Column {
-                    Text { text: "PACKET LOSS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                    Text { text: (NetworkMonitor.packetLossPct * 100).toFixed(1) + " %"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
-                }
+    // Section 3: Traffic Flow (bottom)
+    Column {
+        id: trafficSection
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 15
+        anchors.bottomMargin: 20
+        spacing: 8
+
+        Text {
+            text: "TOTAL TRAFFIC FLOW"
+            color: Style.textLabel
+            font.family: Style.fontData
+            font.pixelSize: Style.sizeHeader
+            font.bold: true
+        }
+
+        Row {
+            spacing: 20
+            Text {
+                text: (NetworkMonitor.downloadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB OUT"
+                color: Style.accentGold
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeData
+            }
+            Text {
+                text: (NetworkMonitor.uploadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB IN"
+                color: Style.accentSilver
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeData
             }
         }
 
-        // 2. World View
-        Column {
+        Item {
             width: parent.width
-            spacing: 5
-            height: 350
-
-            Text {
-                text: "GLOBAL NETWORK MAP / ENDPOINT: 41.8781, -87.6298"
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeHeader
-                font.bold: true
-            }
-
-            GlobePanel {
-                width: parent.width
-                height: 320
-                anchors.horizontalCenter: parent.horizontalCenter
+            height: 80
+            
+            ShaderEffect {
+                anchors.fill: parent
+                anchors.leftMargin: 30
+                property var  networkHistory: netHistProvider
+                property real graphScale:     netHistProvider.graphScale
+                property real phase:          netHistProvider.phase
+                fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
             }
         }
+    }
 
-        // 3. Network Traffic
-        Column {
+    // Section 2: World View (center, fills remaining space)
+    Column {
+        id: globeSection
+        anchors.top: statusSection.bottom
+        anchors.bottom: trafficSection.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 15
+        anchors.topMargin: 10
+        anchors.bottomMargin: 10
+        spacing: 5
+
+        Text {
+            text: "GLOBAL NETWORK MAP / ENDPOINT: 41.8781, -87.6298"
+            color: Style.textLabel
+            font.family: Style.fontData
+            font.pixelSize: Style.sizeHeader
+            font.bold: true
+        }
+
+        GlobePanel {
             width: parent.width
-            spacing: 8
-
-            Text {
-                text: "TOTAL TRAFFIC FLOW"
-                color: Style.textLabel
-                font.family: Style.fontData
-                font.pixelSize: Style.sizeHeader
-                font.bold: true
-            }
-
-            Row {
-                spacing: 20
-                Text {
-                    text: (NetworkMonitor.downloadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB OUT"
-                    color: Style.accentGold
-                    font.family: Style.fontData
-                    font.pixelSize: Style.sizeData
-                }
-                Text {
-                    text: (NetworkMonitor.uploadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB IN"
-                    color: Style.accentSilver
-                    font.family: Style.fontData
-                    font.pixelSize: Style.sizeData
-                }
-            }
-
-            Item {
-                width: parent.width
-                height: 100
-                
-                // Y-axis labels
-                Column {
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: 30
-                    z: 10
-                    Text { text: " 0.61"; color: Style.textLabel; font.pixelSize: 8; font.family: Style.fontData }
-                    Item { height: 70; width: 1 }
-                    Text { text: "-1.61"; color: Style.textLabel; font.pixelSize: 8; font.family: Style.fontData; anchors.bottom: parent.bottom }
-                }
-
-                ShaderEffect {
-                    anchors.fill: parent
-                    anchors.leftMargin: 30
-                    property var  networkHistory: netHistProvider
-                    property real graphScale:     netHistProvider.graphScale
-                    property real phase:          netHistProvider.phase
-                    fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
-                }
-            }
+            height: parent.height - 25 // Account for header text and spacing
         }
     }
 }
