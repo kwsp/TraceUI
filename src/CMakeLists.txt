@@ -33,12 +33,12 @@ qt_add_qml_module(${PROJECT_NAME}
     backend/CpuHistoryProvider.cpp
     backend/ProcessListModel.h
     backend/ProcessListModel.cpp
-    backend/TerminalBackend.h
-    backend/TerminalBackend.cpp
-    backend/TerminalModel.h
-    backend/TerminalModel.cpp
-    backend/FileDescriptor.h
-    backend/FileDescriptor.cpp
+    terminal/TerminalBackend.h
+    terminal/TerminalBackend.cpp
+    terminal/TerminalModel.h
+    terminal/TerminalModel.cpp
+    terminal/FileDescriptor.h
+    terminal/FileDescriptor.cpp
 )
 
 if(APPLE)
@@ -84,6 +84,7 @@ configure_file(config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}  # for config.h
   ${CMAKE_CURRENT_SOURCE_DIR}/backend  # for qml to register C++ types
+  ${CMAKE_CURRENT_SOURCE_DIR}/terminal
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

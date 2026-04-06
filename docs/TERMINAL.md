@@ -31,18 +31,30 @@ Parsing the ANSI escape sequences and UTF-8 byte stream is extremely performance
 - **Fixed-size Arrays**: The screen buffer is represented by flat, pre-allocated C arrays (`LineBuf`) rather than trees or objects. Memory is rarely allocated during normal operation.
 - **Dirty Tracking**: Lines and individual cells are marked "dirty" when modified. The renderer only uploads dirty regions to the GPU (via `glTexSubImage2D` or mapped buffers), avoiding full-screen updates.
 
-## Implications for TraceUI Terminal
+## Current Implementation Status in TraceUI
 
-Currently, the `TraceUI` terminal relies on a `ListView` mapping to QML `Text` delegates containing `Text.RichText`. While idiomatic for typical desktop UI, this approach has scaling limits:
+The TraceUI terminal is built using `libvterm` for terminal state emulation and a QML `ListView` for rendering.
 
-1. **Rich Text Overhead**: Parsing HTML strings (e.g., `<span style="...">`) inside Qt for 50-100 lines on every keystroke or screen update is very CPU intensive.
-2. **Layout Thrashing**: `ListView` and `Text` elements invoke Qt's heavy layout engines, text shaping, and rendering paths.
-3. **Over-Rendering**: Emitting `dataChanged` across the whole view currently forces QML to rebuild delegates for unchanged lines.
+### Key Architectural Decisions
+- **`TerminalBackend`**: Manages the PTY lifecycle (`forkpty`) and bridges `libvterm` with Qt.
+- **`TerminalModel`**: A `QAbstractListModel` that transforms the `libvterm` screen buffer into HTML-formatted lines.
+- **Rich Text Rendering**: Each terminal row is rendered as a QML `Text` element with `textFormat: Text.RichText`. Per-cell foreground/background colors and attributes (bold, italic, underline) are supported by grouping character runs into `<span>` tags.
+- **Performance Optimizations**:
+    - **Targeted Dirty Tracking**: `TerminalBackend` tracks the exact range of modified rows via `libvterm`'s damage callbacks. `TerminalModel` only emits `dataChanged` for modified rows, preventing unnecessary delegate rebuilds.
+    - **Debounced Updates**: Damage events are coalesced and flushed to the UI at a maximum rate of 60 FPS using a `QTimer`. This prevents the UI from being overwhelmed by high-throughput PTY data.
+- **System Integration**:
+    - Automatic detection of the user's login shell via `getpwuid`.
+    - Shell starts as a login shell (prefixed with `-`).
+    - Working directory is set to the user's home directory on startup.
 
-### Potential Future Improvements for TraceUI
+## Limitations and Future Work
 
-To approach native terminal performance, TraceUI could progressively implement:
-1. **Targeted Dirty Tracking**: Modify `TerminalBackend` and `TerminalModel` to only emit `dataChanged` for lines that were *actually* modified by `vterm_screen_flush_damage`, instead of `(0, rowCount() - 1)`.
-2. **Debounce Updates**: Accumulate PTY events in `TerminalBackend` and use a `QTimer` (e.g., 16ms/60fps) to flush updates to the QML model in batches, similar to Kitty's `input_delay`.
-3. **Custom QQuickItem Renderer**: Bypass QML `ListView` entirely. Implement a custom `QQuickItem` subclass in C++ that uses `QSGNode` to render the grid of cells.
-4. **Direct OpenGL/Vulkan**: For ultimate performance, implement a QML wrapper around a raw OpenGL context (or port a library like `alacritty` or `wezterm` core) managing its own glyph atlas, completely sidestepping Qt's SceneGraph for the terminal panel.
+While the current implementation is functional and optimized for a `ListView` approach, it still relies on Qt's rich text layout engine, which has inherent performance limits for high-frequency updates (e.g., full-screen TUI apps like `vim` or `top`).
+
+### Potential Future Improvements
+
+1. **Custom QQuickItem Renderer**: Replace `ListView` and `RichText` with a C++ `QQuickItem` subclass. Use `QSGNode` (Qt Scene Graph) to render the grid of cells directly, using a texture atlas for glyphs. This would drastically reduce CPU overhead and layout thrashing.
+2. **Scrollback Buffer**: Currently, lines that scroll off the top are lost. Implementing a scrollback ring-buffer in `TerminalBackend` would allow for historical viewing.
+3. **Mouse Support**: Forwarding mouse events from QML to the PTY would enable mouse interaction in terminal applications that support it.
+4. **Alt-Screen Support**: Explicitly handling the alternate screen buffer for full-screen applications.
+5. **Direct OpenGL/Vulkan**: For ultimate performance, bypass the Qt Scene Graph entirely for the terminal grid.

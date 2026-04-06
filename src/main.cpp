@@ -5,8 +5,8 @@
 
 #include "backend/CpuHistoryProvider.h"
 #include "backend/NetworkHistoryProvider.h"
-#include "backend/TerminalBackend.h"
-#include "backend/TerminalModel.h"
+#include "terminal/TerminalBackend.h"
+#include "terminal/TerminalModel.h"
 
 #ifdef Q_OS_MACOS
 #include "backend/macos/NetworkMonitorMacOS.h"
