@@ -224,7 +224,7 @@ Item {
             // Column widths - must match header and delegate
             readonly property int colPid: 40
             readonly property int colCpu: 45
-            readonly property int colMem: 50
+            readonly property int colMem: 60
             readonly property int colSpacing: 1
 
             header: Row {
