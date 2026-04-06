@@ -19,6 +19,11 @@ class SystemMonitor : public QObject {
     Q_PROPERTY(double loadAverage1m READ loadAverage1m NOTIFY dataUpdated)
     Q_PROPERTY(QString cpuName READ cpuName CONSTANT)
     Q_PROPERTY(QString uptime READ uptime NOTIFY dataUpdated)
+    Q_PROPERTY(QString osType READ osType CONSTANT)
+    Q_PROPERTY(QString powerSource READ powerSource NOTIFY dataUpdated)
+    Q_PROPERTY(double cpuClockMin READ cpuClockMin CONSTANT)
+    Q_PROPERTY(double cpuClockMax READ cpuClockMax CONSTANT)
+    Q_PROPERTY(int totalTasks READ totalTasks NOTIFY dataUpdated)
 
 public:
     explicit SystemMonitor(QObject* parent = nullptr);
@@ -39,6 +44,11 @@ public:
     [[nodiscard]] double cpuUsageSystem() const;
     [[nodiscard]] QString cpuName() const;
     [[nodiscard]] QString uptime() const;
+    [[nodiscard]] QString osType() const;
+    [[nodiscard]] QString powerSource() const;
+    [[nodiscard]] double cpuClockMin() const;
+    [[nodiscard]] double cpuClockMax() const;
+    [[nodiscard]] int totalTasks() const;
 
     virtual void update() = 0;
 
@@ -57,4 +67,9 @@ protected:
     double m_cpuUsageSystem = 0.0;
     QString m_cpuName;
     QString m_uptime;
+    QString m_osType = "UNKNOWN";
+    QString m_powerSource = "WIRED";
+    double m_cpuClockMin = 0.0;
+    double m_cpuClockMax = 0.0;
+    int m_totalTasks = 0;
 };

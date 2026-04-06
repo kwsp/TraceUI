@@ -4,13 +4,11 @@ import TraceUI
 Item {
     id: root
     width: 400
-    height: 300
+    height: 700
 
     CpuHistoryProvider {
         id: cpuHistProvider
         visible: false
-        width: 1
-        height: 1
     }
 
     Connections {
@@ -20,214 +18,172 @@ Item {
         }
     }
 
-    Rectangle {
+    PanelFrame {
+        title: "SYSTEM"
+    }
+
+    Column {
         anchors.fill: parent
-        color: Style.panelBg
-        border.color: Style.borderDefault
-        border.width: 1
-    }
+        anchors.margins: 15
+        spacing: 20
 
-    Item {
-        id: header
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 30
-
-        Text {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: 10
-            text: "SYSTEM STATUS"
-            color: Style.textPrimary
-            font.pixelSize: 12
-            font.family: Style.fontData
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
+        // 1. Header & Clock
+        Column {
             width: parent.width
-            height: 1
-            color: Style.borderDefault
-        }
-    }
-
-    // Top Clock Section
-    Item {
-        id: timeSection
-        anchors.top: header.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 60
-
-        Text {
-            id: timeText
-            anchors.centerIn: parent
-            text: Qt.formatTime(new Date(), "hh:mm:ss")
-            color: Style.textPrimary
-            font.family: Style.fontDisplay
-            font.pixelSize: 48
-        }
-
-        Timer {
-            interval: 1000
-            running: true
-            repeat: true
-            onTriggered: timeText.text = Qt.formatTime(new Date(), "hh:mm:ss")
-        }
-    }
-
-    // System Info
-    Item {
-        id: sysInfoSection
-        anchors.top: timeSection.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 60
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 20
-
-            Column {
-                Text {
-                    text: "UPTIME"
-                    color: Style.textLabel
-                    font.pixelSize: 10
-                    font.family: Style.fontData
-                }
-                Text {
-                    text: SystemMonitor.uptime
-                    color: Style.textPrimary
-                    font.pixelSize: 14
-                    font.family: Style.fontData
-                }
-            }
-            Column {
-                Text {
-                    text: "LOAD"
-                    color: Style.textLabel
-                    font.pixelSize: 10
-                    font.family: Style.fontData
-                }
-                Text {
-                    text: SystemMonitor.loadAverage1m.toFixed(2)
-                    color: Style.textPrimary
-                    font.pixelSize: 14
-                    font.family: Style.fontData
-                }
-            }
-            Column {
-                Text {
-                    text: "TEMP"
-                    color: Style.textLabel
-                    font.pixelSize: 10
-                    font.family: Style.fontData
-                }
-                Text {
-                    text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"
-                    color: Style.textPrimary
-                    font.pixelSize: 14
-                    font.family: Style.fontData
-                }
-            }
-        }
-    }
-
-    // CPU & Memory Shaders
-    Item {
-        anchors.top: sysInfoSection.bottom
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: 10
-
-        Item {
-            id: cpuLabelRow
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 20
+            spacing: 5
 
             Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: "CPU USAGE"
-                color: Style.textLabel
-                font.pixelSize: 10
-                font.family: Style.fontData
+                id: clockText
+                text: Qt.formatTime(new Date(), "hh:mm:ss")
+                color: Style.textPrimary
+                font.family: Style.fontDisplay
+                font.pixelSize: Style.sizeClock
+                
+                Timer {
+                    interval: 1000; running: true; repeat: true
+                    onTriggered: clockText.text = Qt.formatTime(new Date(), "hh:mm:ss")
+                }
             }
+
             Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
                 spacing: 15
-
                 Text {
-                    text: "USR: " + SystemMonitor.cpuUsageUser.toFixed(1) + "%"
+                    text: Qt.formatDate(new Date(), "yyyy MMM dd").toUpperCase()
+                    color: Style.textLabel
+                    font.family: Style.fontData
+                    font.pixelSize: Style.sizeData
+                }
+                Text {
+                    text: "UPTIME " + SystemMonitor.uptime
+                    color: Style.textLabel
+                    font.family: Style.fontData
+                    font.pixelSize: Style.sizeData
+                }
+                Text {
+                    text: SystemMonitor.osType
+                    color: Style.textLabel
+                    font.family: Style.fontData
+                    font.pixelSize: Style.sizeData
+                }
+                Text {
+                    text: SystemMonitor.powerSource
                     color: Style.accentGold
-                    font.pixelSize: 10
                     font.family: Style.fontData
-                }
-                Text {
-                    text: "SYS: " + SystemMonitor.cpuUsageSystem.toFixed(1) + "%"
-                    color: Style.accentSilver
-                    font.pixelSize: 10
-                    font.family: Style.fontData
+                    font.pixelSize: Style.sizeData
                 }
             }
         }
 
-        ShaderEffect {
-            id: cpuShader
-            anchors.top: cpuLabelRow.bottom
-            anchors.topMargin: 5
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 50
-
-            property var  cpuHistory: cpuHistProvider
-            property real graphScale: cpuHistProvider.graphScale
-            property real phase:      cpuHistProvider.phase
-
-            fragmentShader: "qrc:/shaders/cpugraph.frag.qsb"
-        }
-
-        Item {
-            id: memLabelRow
-            anchors.top: cpuShader.bottom
-            anchors.topMargin: 10
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 20
+        // 2. CPU Usage
+        Column {
+            width: parent.width
+            spacing: 8
 
             Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: "MEMORY"
+                text: "CPU USAGE / " + SystemMonitor.cpuName
                 color: Style.textLabel
-                font.pixelSize: 10
                 font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
             }
-            Text {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: (SystemMonitor.ramUsedMB / 1024).toFixed(1) + " GB / " + (SystemMonitor.ramTotalMB / 1024).toFixed(1) + " GB"
-                color: Style.textLabel
-                font.pixelSize: 10
-                font.family: Style.fontData
+
+            ShaderEffect {
+                id: cpuShader
+                width: parent.width
+                height: 80
+                property var  cpuHistory: cpuHistProvider
+                property real graphScale: cpuHistProvider.graphScale
+                property real phase:      cpuHistProvider.phase
+                fragmentShader: "qrc:/shaders/cpugraph.frag.qsb"
+            }
+
+            Grid {
+                columns: 3
+                width: parent.width
+                spacing: 10
+                
+                Column {
+                    Text { text: "TEMP"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                }
+                Column {
+                    Text { text: "CLOCK (MIN/MAX)"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: SystemMonitor.cpuClockMin.toFixed(2) + " / " + SystemMonitor.cpuClockMax.toFixed(2) + " GHz"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                }
+                Column {
+                    Text { text: "TASKS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: SystemMonitor.totalTasks.toString(); color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                }
             }
         }
 
-        ShaderEffect {
-            id: memShader
-            anchors.top: memLabelRow.bottom
-            anchors.topMargin: 5
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
+        // 3. Memory
+        Column {
+            width: parent.width
+            spacing: 8
 
-            property real usageRatio: SystemMonitor.ramTotalMB > 0 ? SystemMonitor.ramUsedMB / SystemMonitor.ramTotalMB : 0.0
-            fragmentShader: "qrc:/shaders/memorygrid.frag.qsb"
+            Text {
+                text: "USING " + (SystemMonitor.ramUsedMB/1024).toFixed(1) + " OUT OF " + (SystemMonitor.ramTotalMB/1024).toFixed(1) + " GIB"
+                color: Style.textLabel
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
+            }
+
+            ShaderEffect {
+                width: parent.width
+                height: 60
+                property real usageRatio: SystemMonitor.ramTotalMB > 0 ? SystemMonitor.ramUsedMB / SystemMonitor.ramTotalMB : 0.0
+                fragmentShader: "qrc:/shaders/memorygrid.frag.qsb"
+            }
+        }
+
+        // 4. Top Processes
+        Column {
+            width: parent.width
+            height: 200
+            spacing: 8
+
+            Text {
+                text: "TOP PROCESSES"
+                color: Style.textLabel
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
+            }
+
+            ListView {
+                width: parent.width
+                height: parent.height - 30
+                model: ProcessWatcher.processes
+                clip: true
+                interactive: false
+
+                header: Row {
+                    width: parent.width
+                    height: 20
+                    Text { width: 60; text: "PID"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { width: 140; text: "NAME"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { width: 60; text: "CPU%"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData; horizontalAlignment: Text.AlignRight }
+                    Text { width: 60; text: "MEM"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData; horizontalAlignment: Text.AlignRight }
+                }
+
+                delegate: Row {
+                    id: procRow
+                    required property int pid
+                    required property string name
+                    required property double cpuPct
+                    required property int ramMB
+
+                    width: parent.width
+                    height: 20
+                    
+                    Text { width: 60; text: procRow.pid.toString(); color: Style.accentSilver; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                    Text { width: 140; text: procRow.name; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData; elide: Text.ElideRight }
+                    Text { width: 60; text: procRow.cpuPct.toFixed(1); color: Style.accentGold; font.pixelSize: Style.sizeData; font.family: Style.fontData; horizontalAlignment: Text.AlignRight }
+                    Text { width: 60; text: procRow.ramMB.toString(); color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData; horizontalAlignment: Text.AlignRight }
+                }
+            }
         }
     }
 }

@@ -13,3 +13,8 @@ SystemMonitor::SystemMonitor(QObject* parent) : QObject(parent) {}
 [[nodiscard]] double SystemMonitor::cpuUsageSystem() const { return m_cpuUsageSystem; }
 [[nodiscard]] QString SystemMonitor::cpuName() const { return m_cpuName; }
 [[nodiscard]] QString SystemMonitor::uptime() const { return m_uptime; }
+[[nodiscard]] QString SystemMonitor::osType() const { return m_osType; }
+[[nodiscard]] QString SystemMonitor::powerSource() const { return m_powerSource; }
+[[nodiscard]] double SystemMonitor::cpuClockMin() const { return m_cpuClockMin; }
+[[nodiscard]] double SystemMonitor::cpuClockMax() const { return m_cpuClockMax; }
+[[nodiscard]] int SystemMonitor::totalTasks() const { return m_totalTasks; }

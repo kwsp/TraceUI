@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QmlModels ShaderTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QmlModels QuickControls2 ShaderTools)
 qt_standard_project_setup(REQUIRES 6.5)
 
 qt_add_executable(${PROJECT_NAME}
@@ -18,6 +18,7 @@ set(TRACEUI_QML_FILES
   GlobePanel.qml
   TilingPanelWrapper.qml
   SplitDivider.qml
+  PanelFrame.qml
 )
 
 # TRACEUI_QML_FILES already defined above
@@ -84,6 +85,7 @@ qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"
     shaders/cpugraph.frag
     shaders/memorygrid.frag
     shaders/networkgraph.frag
+    shaders/scanlines.frag
 )
 
 configure_file(config.h.in config.h)
@@ -97,6 +99,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt6::Gui
   Qt6::Qml
   Qt6::Quick
+  Qt6::QmlModels
+  Qt6::QuickControls2
   EncomGlobe
   EncomGlobeplugin
 )

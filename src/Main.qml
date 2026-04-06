@@ -19,18 +19,25 @@ Window {
         source: "qrc:/fonts/Hack-Regular.ttf"
     }
 
-    // Dot grid background
+    // 1. Dot grid background
     ShaderEffect {
         anchors.fill: parent
         fragmentShader: "qrc:/shaders/dotgrid.frag.qsb"
-
         property vector2d resolution: Qt.vector2d(width, height)
         property real spacing: 20.0
         property real radius: 0.5
         property real dotAlpha: 0.2
     }
 
-    // Main Tiling Layout
+    // 2. Global Scanline Overlay
+    ShaderEffect {
+        anchors.fill: parent
+        z: 1000 // On top of everything
+        opacity: 0.05
+        fragmentShader: "qrc:/shaders/scanlines.frag.qsb"
+    }
+
+    // 3. Main Tiling Layout
     SplitView {
         id: mainSplit
         anchors.fill: parent
@@ -38,43 +45,23 @@ Window {
         orientation: Qt.Horizontal
         handle: SplitDivider {}
 
-        // Left Column: System, Processes, Network
-        SplitView {
-            id: leftColumn
-            SplitView.preferredWidth: 400
-            SplitView.minimumWidth: 250
-            orientation: Qt.Vertical
-            handle: SplitDivider { vertical: false }
-
-            TilingPanelWrapper {
-                id: wrapperSys
-                panelId: "system"
-                SplitView.fillHeight: true
-                SplitView.minimumHeight: 150
-            }
-            TilingPanelWrapper {
-                id: wrapperProc
-                panelId: "processes"
-                SplitView.fillHeight: true
-                SplitView.minimumHeight: 150
-            }
-            TilingPanelWrapper {
-                id: wrapperNet
-                panelId: "network"
-                SplitView.fillHeight: true
-                SplitView.minimumHeight: 150
-            }
-        }
-
-        // Middle Column: Globe
+        // Left Column (System)
         TilingPanelWrapper {
-            id: wrapperGlobe
-            panelId: "globe"
+            id: wrapperLeft
+            panelId: "system"
             SplitView.fillWidth: true
-            SplitView.minimumWidth: 300
+            SplitView.minimumWidth: 400
         }
 
-        // Right Column: Terminal
+        // Right Column (Network)
+        TilingPanelWrapper {
+            id: wrapperRight
+            panelId: "network"
+            SplitView.fillWidth: true
+            SplitView.minimumWidth: 400
+        }
+
+        // Terminal Column (Optional)
         TilingPanelWrapper {
             id: wrapperTerm
             panelId: "terminal"
@@ -87,9 +74,6 @@ Window {
         Component.onCompleted: {
             let savedMain = LayoutStore.loadSplitState("mainSplit")
             if (savedMain) mainSplit.restoreState(savedMain)
-            let savedLeft = LayoutStore.loadSplitState("leftColumn")
-            if (savedLeft) leftColumn.restoreState(savedLeft)
-
             // Populate panels into their saved slots
             LayoutStore.restorePanelAssignments(panelRegistry)
         }
@@ -97,9 +81,7 @@ Window {
 
     // All panel instances live here, parented to root so they survive reparenting
     SystemPanel  { id: sysPanel;  visible: false }
-    ProcessPanel { id: procPanel; visible: false }
     NetworkPanel { id: netPanel;  visible: false }
-    GlobePanel   { id: globePanel; visible: false }
     Loader {
         id: termLoader
         active: buildTerminal
@@ -110,49 +92,17 @@ Window {
     // Registry: panelId -> Item, slot id -> TilingPanelWrapper
     QtObject {
         id: panelRegistry
+        property var panels: ({ "system": sysPanel, "network": netPanel, "terminal": termLoader })
+        property var slots:  ({ "left": wrapperLeft, "right": wrapperRight, "terminal": wrapperTerm })
+        property var defaultAssignment: ({ "system": "left", "network": "right", "terminal": "terminal" })
 
-        property var panels: ({
-            "system":    sysPanel,
-            "processes": procPanel,
-            "network":   netPanel,
-            "globe":     globePanel,
-            "terminal":  termLoader
-        })
-
-        property var slots: ({
-            "system":    wrapperSys,
-            "processes": wrapperProc,
-            "network":   wrapperNet,
-            "globe":     wrapperGlobe,
-            "terminal":  wrapperTerm
-        })
-
-        // Default assignment: panelId -> slotId
-        property var defaultAssignment: ({
-            "system":    "system",
-            "processes": "processes",
-            "network":   "network",
-            "globe":     "globe",
-            "terminal":  "terminal"
-        })
-
-        Component.onCompleted: {
-            applyAssignment(defaultAssignment)
-        }
+        Component.onCompleted: applyAssignment(defaultAssignment)
 
         function applyAssignment(assignment) {
-            // Clear all slots first
-            for (let slotId in slots) {
-                slots[slotId].hostedPanel = null
-            }
-            // Place each panel in its assigned slot
+            for (let slotId in slots) slots[slotId].hostedPanel = null
             for (let panelId in assignment) {
-                let slotId = assignment[panelId]
-                let slot = slots[slotId]
-                let panel = panels[panelId]
-                if (slot && panel) {
-                    slot.hostedPanel = panel
-                }
+                let slotId = assignment[panelId]; let slot = slots[slotId]; let panel = panels[panelId]
+                if (slot && panel) slot.hostedPanel = panel
             }
         }
     }
@@ -160,7 +110,6 @@ Window {
     // Save layout on close
     onClosing: {
         LayoutStore.saveSplitState("mainSplit",  mainSplit.saveState())
-        LayoutStore.saveSplitState("leftColumn", leftColumn.saveState())
         LayoutStore.savePanelAssignments(panelRegistry)
     }
 }

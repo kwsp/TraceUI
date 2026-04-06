@@ -1,132 +1,145 @@
 import QtQuick
 import TraceUI
+import EncomGlobe
 
 Item {
     id: root
     width: 400
-    height: 200
+    height: 700
 
     NetworkHistoryProvider {
-        id: histProvider
+        id: netHistProvider
         visible: false
-        width: 1
-        height: 1
     }
 
     Connections {
         target: NetworkMonitor
         function onDataUpdated() {
-            histProvider.onDataUpdated(NetworkMonitor.downloadBytesPerSec, NetworkMonitor.uploadBytesPerSec);
+            netHistProvider.onDataUpdated(NetworkMonitor.downloadBytesPerSec, NetworkMonitor.uploadBytesPerSec);
         }
     }
 
-    Rectangle {
+    PanelFrame {
+        title: "NETWORK"
+    }
+
+    Column {
         anchors.fill: parent
-        color: Style.panelBg
-        border.color: Style.borderDefault
-        border.width: 1
-    }
+        anchors.margins: 15
+        spacing: 20
 
-    Item {
-        id: header
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 30
-
-        Text {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: 10
-            text: "NETWORK STATUS"
-            color: Style.textPrimary
-            font.pixelSize: 12
-            font.family: Style.fontData
-        }
-
-        Row {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.rightMargin: 10
-            spacing: 20
-
-            Text {
-                text: "IFACE " + NetworkMonitor.mainInterface
-                color: Style.textDim
-                font.pixelSize: 10
-                font.family: Style.fontData
-            }
-            Text {
-                text: NetworkMonitor.vpnActive ? "VPN SECURE" : "NET ONLINE"
-                color: NetworkMonitor.vpnActive ? Style.accentGold : Style.textPrimary
-                font.pixelSize: 10
-                font.family: Style.fontData
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
+        // 1. Network Status
+        Column {
             width: parent.width
-            height: 1
-            color: Style.borderDefault
-        }
-    }
-
-    Item {
-        anchors.top: header.bottom
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: 10
-
-        Item {
-            id: labelNetRow
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 20
+            spacing: 5
 
             Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: "NETWORK TRAFFIC"
+                text: "NETWORK STATUS"
                 color: Style.textLabel
-                font.pixelSize: 10
                 font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
             }
-            Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 15
 
-                Text {
-                    text: "DL: " + (NetworkMonitor.downloadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
-                    color: Style.accentGold
-                    font.pixelSize: 10
-                    font.family: Style.fontData
+            Grid {
+                columns: 2
+                width: parent.width
+                spacing: 10
+                
+                Column {
+                    Text { text: "IPV4 ADDRESS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: NetworkMonitor.ipv4Address; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
                 }
-                Text {
-                    text: "UL: " + (NetworkMonitor.uploadBytesPerSec / 1024.0).toFixed(1) + " KB/s"
-                    color: Style.accentSilver
-                    font.pixelSize: 10
-                    font.family: Style.fontData
+                Column {
+                    Text { text: "STATE / ONLINE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: NetworkMonitor.isOnline ? "ONLINE" : "OFFLINE"; color: NetworkMonitor.isOnline ? Style.accentGold : Style.accentError; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                }
+                Column {
+                    Text { text: "PING RESPONSE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: NetworkMonitor.pingMs.toString() + " MS"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                }
+                Column {
+                    Text { text: "PACKET LOSS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
+                    Text { text: (NetworkMonitor.packetLossPct * 100).toFixed(1) + " %"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
                 }
             }
         }
 
-        ShaderEffect {
-            id: netShader
-            anchors.top: labelNetRow.bottom
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.topMargin: 5
+        // 2. World View
+        Column {
+            width: parent.width
+            spacing: 5
+            height: 350
 
-            property var  networkHistory: histProvider
-            property real graphScale:     histProvider.graphScale
-            property real phase:          histProvider.phase
+            Text {
+                text: "GLOBAL NETWORK MAP / ENDPOINT: 41.8781, -87.6298"
+                color: Style.textLabel
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
+            }
 
-            fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
+            GlobePanel {
+                width: parent.width
+                height: 320
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+        }
+
+        // 3. Network Traffic
+        Column {
+            width: parent.width
+            spacing: 8
+
+            Text {
+                text: "TOTAL TRAFFIC FLOW"
+                color: Style.textLabel
+                font.family: Style.fontData
+                font.pixelSize: Style.sizeHeader
+                font.bold: true
+            }
+
+            Row {
+                spacing: 20
+                Text {
+                    text: (NetworkMonitor.downloadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB OUT"
+                    color: Style.accentGold
+                    font.family: Style.fontData
+                    font.pixelSize: Style.sizeData
+                }
+                Text {
+                    text: (NetworkMonitor.uploadBytesPerSec / 1024.0 / 1024.0).toFixed(1) + " MB IN"
+                    color: Style.accentSilver
+                    font.family: Style.fontData
+                    font.pixelSize: Style.sizeData
+                }
+            }
+
+            Item {
+                width: parent.width
+                height: 100
+                
+                // Y-axis labels
+                Column {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width: 30
+                    z: 10
+                    Text { text: " 0.61"; color: Style.textLabel; font.pixelSize: 8; font.family: Style.fontData }
+                    Item { SplitView.fillHeight: true; height: 70 }
+                    Text { text: "-1.61"; color: Style.textLabel; font.pixelSize: 8; font.family: Style.fontData; anchors.bottom: parent.bottom }
+                }
+
+                ShaderEffect {
+                    anchors.fill: parent
+                    anchors.leftMargin: 30
+                    property var  networkHistory: netHistProvider
+                    property real graphScale:     netHistProvider.graphScale
+                    property real phase:          netHistProvider.phase
+                    fragmentShader: "qrc:/shaders/networkgraph.frag.qsb"
+                }
+            }
         }
     }
 }

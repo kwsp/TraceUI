@@ -19,4 +19,10 @@ QtObject {
 
     readonly property string fontDisplay: "Blender Pro"
     readonly property string fontData:    "Hack"
+
+    // HUD Typography Sizes
+    readonly property real sizeClock:  64
+    readonly property real sizeHeader: 14
+    readonly property real sizeData:   10
+    readonly property real sizeLabel:  8
 }

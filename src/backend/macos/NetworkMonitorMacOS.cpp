@@ -20,6 +20,10 @@ void NetworkMonitorMacOS::update() {
 void NetworkMonitorMacOS::performUpdate() {
     updateNetworkTraffic();
     updateActiveConnections();
+    m_ipv4Address = "192.168.1.42"; // Placeholder
+    m_isOnline = true; // Placeholder
+    m_pingMs = 15; // Placeholder
+    m_packetLossPct = 0.05; // Placeholder
     emit dataUpdated();
 }
 

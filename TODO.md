@@ -1,72 +1,75 @@
-# TraceUI Terminal Implementation TODO
+# TraceUI Implementation Roadmap
 
-## 1. UI Restructuring
-- [x] Shrink `GlobePanel` and position it next to `SystemPanel`.
-- [x] Move `ProcessPanel` and `NetworkPanel` to maintain the left-hand status column.
-- [x] Create a placeholder `TerminalPanel` occupying the right portion of the screen.
+## Phase 1: Terminal Support (Complete)
+- [x] PTY Backend (macOS/Linux) and `libvterm` integration.
+- [x] `TerminalModel` with RichText xterm-256color support.
+- [x] `TraceUITerminal` standalone QML module.
+- [x] Tiling layout with persistent SplitView state.
 
-## 2. Terminal Backend (C++ & libvterm)
-- [x] Add `libvterm` as a submodule or external dependency.
-- [x] Implement `TerminalBackend` class:
-    - [x] Manage PTY lifecycle (macOS/Linux `forkpty`).
-    - [x] Setup `QSocketNotifier` to monitor PTY for incoming data.
-    - [x] Initialize `VTerm` and `VTermScreen`.
-    - [x] Implement `libvterm` callbacks (damage, movecursor, settermprop).
-    - [x] Handle input: Forward keyboard events from QML to PTY.
-    - [x] RAII wrappers for VTerm (`VTermPtr`) and file descriptors (`FileDescriptor`).
-    - [x] Proper child process cleanup (SIGHUP + waitpid) to prevent zombies.
-    - [x] Coalesced `resize(rows, cols)` to avoid double TIOCSWINSZ.
-    - [x] Auto-detect user's login shell via `getpwuid`.
-    - [x] Handle double-width characters in `getLineText`.
-    - [x] `vterm_screen_flush_damage` after PTY reads for reliable rendering.
-    - [x] `vterm_output_set_callback` for terminal-to-shell control sequences.
-- [x] Implement `TerminalModel` (QAbstractListModel):
-    - [x] Map `libvterm` screen buffer to model rows.
-    - [x] Expose cell data (character role; foreground/background roles stubbed).
-    - [x] Signal `dataChanged` with specific roles on screen updates.
-- [x] Unit Tests for `TerminalBackend` and `TerminalModel` (11 tests).
+## Phase 2: Cyberdeck HUD Refactoring (Current)
+Refactor the entire UI into the high-density HUD layout (System vs Network columns).
 
-## 3. Terminal Frontend (QML)
-- [x] Create `TerminalPanel.qml` with `FocusScope`.
-- [x] Grid-based text rendering using monospaced font (`Hack`).
-- [x] Keyboard interaction (`Keys.onPressed`) with Ctrl, arrows, Home/End/Delete/PgUp/PgDn.
-- [x] Visual cursor (blinking, positioned relative to scroll offset).
-- [x] Terminal resizing when window dimensions change (coalesced via `resize()`).
-- [x] Click-to-focus with `MouseArea`.
-- [x] Separate the Terminal into its own QML Module (`TraceUI.Terminal`).
+### 2.1 Backend Refactoring (C++ & Data Providers)
+- [ ] **SystemMonitor Update**:
+    - [ ] Add `osType` (e.g., "MACOS", "LINUX").
+    - [ ] Add `powerSource` (placeholder "WIRED", add TODO for real battery status).
+    - [ ] Add `cpuTempCelsius` (ensure real value on macOS/Linux).
+    - [ ] Add `cpuClockMin` / `cpuClockMax` (placeholders).
+    - [ ] Add `totalTasks` count (placeholder).
+    - [ ] Ensure `cpuModelName` is correctly fetched.
+- [ ] **NetworkMonitor Update**:
+    - [ ] Add `ipv4Address` string.
+    - [ ] Add `isOnline` boolean.
+    - [ ] Add `pingMs` (placeholder).
+    - [ ] Add `packetLossPct` (placeholder).
+    - [ ] Coordinate source: Provide Chicago (41.8781, -87.6298) as default lat/lon for the globe.
 
-## 4. Remaining Work (Making Terminal a truly reusable component)
+### 2.2 Styling & Typography
+- [ ] **Style.qml Expansion**:
+    - [ ] Define `fontDisplay` (Extra Large for Clock).
+    - [ ] Define `fontHeader` (Medium/Bold for section titles).
+    - [ ] Define `fontData` (Small Monospace for metrics).
+    - [ ] Add `accentSilver` and `textLabel` colors to the palette.
+- [ ] **Panel Frames**:
+    - [ ] Create `PanelFrame.qml` or `PanelBracket.qml` component.
+    - [ ] Implement the "corner bracket" visual style with labels like "SYSTEM", "NETWORK".
 
-### Refactor for Portability
-- [ ] Remove "Global" Dependencies: Refactor `TerminalPanel.qml` to use public properties for colors and fonts instead of `Style.qml`.
-- [ ] Abstract PTY Logic: Create a `TerminalProcess` interface and implement a Windows version (using `ConPTY`) to support all Qt platforms.
-- [ ] Self-Contained Resources: Bundle necessary fonts (like `Hack`) within the module or provide a clean API to set them.
+### 2.3 System Panel Refactor (Left Column)
+- [ ] **Header & Clock Section**:
+    - [ ] Implement XL Digital Clock.
+    - [ ] Add metadata row: Date, Uptime, OS, Power.
+- [ ] **CPU Usage Section**:
+    - [ ] Display CPU model name.
+    - [ ] Consolidate into a single Avg CPU line graph (reuse `CpuHistoryProvider`).
+    - [ ] Add sub-stats grid: Temp, Min/Max Clock, Total Tasks.
+- [ ] **Memory Section**:
+    - [ ] Text: "USING X OUT OF Y GIB".
+    - [ ] Visualization: Dot-matrix/Bit-map allocation grid (Custom Shader or Grid of Rects).
+- [ ] **Process List Section**:
+    - [ ] Table headers: PID, NAME, CPU, MEM.
+    - [ ] High-density list (20px row height).
 
-### Per-Cell Color Support
-- [x] Targeted Dirty Tracking: Emit `dataChanged` only for actually modified lines instead of all lines.
-- [x] Render Throttling/Debouncing: Batch PTY reads and use a timer (e.g., 60fps) to flush damage to the UI to avoid high CPU usage.
-- [ ] Custom `QQuickItem` Renderer: (Long-term) Replace `ListView` and `RichText` with a C++ `QSGNode` based grid renderer.
+### 2.4 Network Panel Refactor (Right Column)
+- [ ] **Network Status Section**:
+    - [ ] Display IPv4, Online state, IP, and Ping.
+- [ ] **World View Section**:
+    - [ ] Re-integrate `GlobePanel` as a sub-component.
+    - [ ] Add "circular target" overlay at the fixed Chicago coordinates.
+    - [ ] Display Endpoint Lat/Lon text above the globe.
+- [ ] **Network Traffic Section**:
+    - [ ] Display Throughput stats: "X MB OUT, Y GB IN".
+    - [ ] Visual: Large grid-based live waveform (Reuse/Style `NetworkHistoryProvider`).
+    - [ ] Add Y-axis labels (0.61 to -1.61) for aesthetic accuracy.
 
-### Per-Cell Color Support
-- [x] Extract `VTermScreenCell` fg/bg colors and attributes (bold, italic, underline).
-- [x] Update delegate to use per-cell coloring via RichText spans.
+### 2.5 Global Effects & Polish
+- [ ] **Scanline Overlay**:
+    - [ ] Implement a full-screen `ShaderEffect` for the subtle scanline/grid texture.
+- [ ] **Panel Rearrangement**:
+    - [ ] Update `Main.qml` default tiling state to present the two-column view.
+- [ ] **Tiling Persistence**:
+    - [ ] Ensure the new layout correctly saves/restores via `LayoutStore`.
 
-### Scrollback Buffer
-- [ ] Implement `sb_pushline` / `sb_popline` callbacks in `TerminalBackend`.
-- [ ] Store scrollback lines in a ring buffer.
-- [ ] Allow scrolling back through history (mouse wheel or Shift+PgUp/PgDn).
-
-### Alt-Screen Support
-- [ ] Call `vterm_screen_enable_altscreen()` for programs like `vim`, `top`, `less`.
-
-### Styling & Integration
-- [ ] Apply Neo-Kitsch theme colors to the terminal's default palette via `vterm_screen_set_default_colors`.
-- [ ] Add "boot up" or "connection" animations for the terminal window.
-- [ ] Ensure compatibility with common CLI tools (`ls --color`, `top`, `vim`).
-
-### Polish
-- [ ] Mouse event forwarding (click, drag, scroll) for mouse-aware programs.
-- [ ] Selection & clipboard (copy/paste).
-- [ ] Debounce resize events to avoid excessive TIOCSWINSZ during window drag.
-- [ ] Handle `SIGCHLD` to detect shell exit and show a message or restart.
-- [ ] URL detection and click-to-open.
+## Phase 3: Advanced Terminal Features (Future)
+- [ ] Scrollback buffer ring.
+- [ ] Alt-screen support (vim/top).
+- [ ] Windows ConPTY support.

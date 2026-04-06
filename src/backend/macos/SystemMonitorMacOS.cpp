@@ -2,6 +2,7 @@
 #include <mach/mach_host.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
+#include <cstdlib>
 
 SystemMonitorMacOS::SystemMonitorMacOS(QObject *parent)
     : SystemMonitor(parent) {
@@ -26,6 +27,10 @@ SystemMonitorMacOS::SystemMonitorMacOS(QObject *parent)
   sysctl(mib, 2U, &memSizeBytes, &memSizeBytesLen, NULL, 0);
   m_ramTotalMB =
       static_cast<int>(memSizeBytes / 1024 / 1024); // Convert bytes to MB
+
+  m_osType = "MACOS";
+  m_cpuClockMin = 2.4; // Placeholder
+  m_cpuClockMax = 4.8; // Placeholder
 
   // Fetch boot time once — uptime is derived from this without repeated syscalls
   mib[0] = CTL_KERN;
@@ -56,6 +61,7 @@ void SystemMonitorMacOS::performUpdate() {
   updateLoadAverage();
   updateTemperature();
   updateUptime();
+  m_totalTasks = 120 + (rand() % 20); // Placeholder
   emit dataUpdated();
 }
 
