@@ -119,16 +119,26 @@ Item {
             
             Column {
                 width: parent.width / 3
+                clip: true
                 Text { text: "TEMP"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
                 Text { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
             Column {
                 width: parent.width / 3
+                clip: true
                 Text { text: "CLOCK"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { text: SystemMonitor.cpuClockMin.toFixed(2) + " / " + SystemMonitor.cpuClockMax.toFixed(2) + " GHz"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                Text { 
+                    width: parent.width
+                    elide: Text.ElideRight
+                    text: SystemMonitor.cpuClockMin.toFixed(2) + " / " + SystemMonitor.cpuClockMax.toFixed(2) + " GHz"
+                    color: Style.textPrimary
+                    font.pixelSize: Style.sizeData
+                    font.family: Style.fontData
+                }
             }
             Column {
                 width: parent.width / 3
+                clip: true
                 Text { text: "TASKS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
                 Text { text: SystemMonitor.totalTasks.toString(); color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
