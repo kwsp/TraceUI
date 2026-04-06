@@ -120,7 +120,7 @@ Item {
                 width: parent.width / 4
                 clip: true
                 Text { text: "TEMP"; color: Style.textLabel; font.family: Style.fontData; font.pixelSize: Style.sizeLabel }
-                Text { text: SystemMonitor.cpuTempCelsius.toFixed(1) + "°C"; color: Style.textPrimary; font.family: Style.fontData; font.pixelSize: Style.sizeData }
+                Text { text: SystemMonitor.cpuTempCelsius > 0 ? SystemMonitor.cpuTempCelsius.toFixed(1) + "°C" : "N/A"; color: Style.textPrimary; font.family: Style.fontData; font.pixelSize: Style.sizeData }
             }
             Column {
                 width: parent.width / 4

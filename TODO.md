@@ -87,7 +87,16 @@ Refactor the entire UI into the high-density HUD layout (System vs Network colum
 - [ ] Alt-screen support (vim/top).
 - [ ] Windows ConPTY support.
 
-## Phase 4: Real Backend Data (Future)
-- [ ] Implement actual data fetching for `powerSource`, `cpuClockMin/Max`.
-- [ ] Implement actual `pingMs`, `packetLossPct` measurements.
+## Phase 4: Real Backend Data
+- [x] **SystemMonitor** — replace all placeholders with real data:
+    - [x] `powerSource`: IOPowerSources API (AC / BAT nn%).
+    - [x] `cpuClockMin/Max`: sysctl hw.cpufrequency, Apple Silicon fallback.
+    - [x] `totalTasks`: sysctl KERN_PROC_ALL count.
+    - [x] `cpuTempCelsius`: AppleSMC via IOKit (TC0P/TC0D/Tp09/Tp01).
+- [x] **NetworkMonitor** — replace all placeholders with real data:
+    - [x] `ipv4Address`: getifaddrs() scanning AF_INET on real interfaces.
+    - [x] `isOnline`: derived from ipv4Address availability.
+    - [x] `pingMs`: async `ping -c1` via QProcess, parsed RTT.
+    - [x] `packetLossPct`: sliding-window loss tracking.
+    - [x] `activeConnections`: net.inet.tcp.pcbcount sysctl.
 - [ ] GeoIP integration for globe endpoint coordinates.

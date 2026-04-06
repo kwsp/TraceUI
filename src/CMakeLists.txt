@@ -66,7 +66,10 @@ endif()
 
 
 if(APPLE)
-  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation")
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    "-framework CoreFoundation"
+    "-framework IOKit"
+  )
 endif()
 
 # This is only needed to debug QML in Qt Creator.

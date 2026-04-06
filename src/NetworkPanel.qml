@@ -59,11 +59,11 @@ Item {
             }
             Column {
                 Text { text: "PING RESPONSE"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { text: NetworkMonitor.pingMs.toString() + " MS"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                Text { text: NetworkMonitor.pingMs >= 0 ? NetworkMonitor.pingMs + " MS" : "TIMEOUT"; color: NetworkMonitor.pingMs >= 0 ? Style.textPrimary : Style.accentError; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
             Column {
                 Text { text: "PACKET LOSS"; color: Style.textLabel; font.pixelSize: Style.sizeLabel; font.family: Style.fontData }
-                Text { text: (NetworkMonitor.packetLossPct * 100).toFixed(1) + " %"; color: Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
+                Text { text: NetworkMonitor.packetLossPct.toFixed(1) + " %"; color: NetworkMonitor.packetLossPct > 5 ? Style.accentError : Style.textPrimary; font.pixelSize: Style.sizeData; font.family: Style.fontData }
             }
         }
     }
