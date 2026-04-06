@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Install build tools
         run: |
@@ -43,6 +45,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Install build tools
         run: brew install ninja
@@ -79,6 +83,8 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
