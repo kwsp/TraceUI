@@ -66,8 +66,8 @@ Item {
         }
     }
 
-    // Divider line between status and globe
-    Rectangle {
+    // Bracket separator between status and globe
+    SectionBracket {
         id: divider1
         anchors.top: statusSection.bottom
         anchors.left: parent.left
@@ -75,27 +75,19 @@ Item {
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         anchors.topMargin: 8
-        height: 1
-        color: Style.borderDefault
+        text: "GLOBAL NETWORK MAP"
     }
 
     // Section 2: World View (center, fills remaining space)
     Column {
         id: globeSection
         anchors.top: divider1.bottom
-        anchors.bottom: trafficSection.top
+        anchors.bottom: divider2.top
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 10
         spacing: 5
 
-        Text {
-            text: "GLOBAL NETWORK MAP"
-            color: Style.textLabel
-            font.family: Style.fontData
-            font.pixelSize: Style.sizeHeader
-            font.bold: true
-        }
         Text {
             text: "ENDPOINT: 41.8781, -87.6298"
             color: Style.textPrimary
@@ -105,8 +97,20 @@ Item {
 
         GlobePanel {
             width: parent.width
-            height: parent.height - 40 // Account for header text and spacing
+            height: parent.height - 25
         }
+    }
+
+    // Bracket separator between globe and traffic
+    SectionBracket {
+        id: divider2
+        anchors.bottom: trafficSection.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
+        anchors.bottomMargin: 8
+        text: "TOTAL TRAFFIC FLOW"
     }
 
     // Section 3: Traffic Flow (bottom)
@@ -118,14 +122,6 @@ Item {
         anchors.margins: 10
         anchors.bottomMargin: 15
         spacing: 5
-
-        Text {
-            text: "TOTAL TRAFFIC FLOW"
-            color: Style.textLabel
-            font.family: Style.fontData
-            font.pixelSize: Style.sizeHeader
-            font.bold: true
-        }
 
         Row {
             spacing: 15
