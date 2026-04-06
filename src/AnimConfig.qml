@@ -12,6 +12,7 @@ QtObject {
     readonly property int termLineAppearDur:    300   // line fades/scales in
     readonly property int termExpandDur:        600   // line expands to full height
     readonly property int termExpandEasing:     Easing.OutCubic
+    readonly property int termContentDelay:     300   // pause before terminal content appears
 
     // Phase 2: System & Network panels fade in (starts after terminal reveal)
     readonly property int panelFadeDelay:       200   // delay after terminal finishes
@@ -25,6 +26,7 @@ QtObject {
     // ── Computed start offsets (absolute from t=0) ───────────────────────────
     readonly property int termLineStart:    startDelay
     readonly property int termExpandStart:  termLineStart + termLineAppearDur
-    readonly property int panelFadeStart:   termExpandStart + termExpandDur + panelFadeDelay
+    readonly property int termContentStart: termExpandStart + termExpandDur + termContentDelay
+    readonly property int panelFadeStart:   termContentStart + termExpandDur + panelFadeDelay
     readonly property int globeStart:       panelFadeStart + panelFadeDur + globeStartDelay
 }

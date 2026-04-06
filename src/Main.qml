@@ -20,8 +20,9 @@ Window {
     }
 
     // ── Phase tracking ───────────────────────────────────────────────────────
-    // Phases: 0 = blank, 1 = terminal line, 2 = terminal expand,
-    //         3 = panels fade in, 4 = globe intro, 5 = done
+    // Phases: 0 = blank, 1 = terminal line appears, 2 = lines expand,
+    //         3 = terminal content fades in, 4 = panels fade in, 
+    //         5 = globe intro, 6 = done
     property int animPhase: 0
 
     // 1. Dot grid background
@@ -84,7 +85,7 @@ Window {
             // Top reveal line (moves upward from center)
             Rectangle {
                 id: termLineTop
-                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 2
+                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
                 z: 500
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -97,7 +98,7 @@ Window {
             // Bottom reveal line (moves downward from center)
             Rectangle {
                 id: termLineBottom
-                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 2
+                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
                 z: 500
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -139,27 +140,36 @@ Window {
         ScriptAction { script: root.animPhase = 2 }
     }
 
-    // Phase 2: Lines expand outward (up/down), revealing terminal
-    ParallelAnimation {
+    // Phase 2: Lines expand outward (up/down) - no content yet
+    NumberAnimation {
         id: termExpandAnim
-        NumberAnimation {
-            target: wrapperTerm
-            property: "revealHalfHeight"
-            from: 1; to: wrapperTerm.height / 2
-            duration: AnimConfig.termExpandDur
-            easing.type: AnimConfig.termExpandEasing
-        }
-        NumberAnimation {
-            target: wrapperTerm
-            property: "opacity"
-            from: 0; to: 1
-            duration: AnimConfig.termExpandDur
-            easing.type: AnimConfig.termExpandEasing
-        }
+        target: wrapperTerm
+        property: "revealHalfHeight"
+        from: 1; to: wrapperTerm.height / 2
+        duration: AnimConfig.termExpandDur
+        easing.type: AnimConfig.termExpandEasing
+        onFinished: termContentDelayTimer.start()
+    }
+
+    // Delay before terminal content appears
+    Timer {
+        id: termContentDelayTimer
+        interval: AnimConfig.termContentDelay
+        onTriggered: root.animPhase = 3
+    }
+
+    // Phase 3: Terminal content fades in (lines become borders)
+    NumberAnimation {
+        id: termContentAnim
+        target: wrapperTerm
+        property: "opacity"
+        from: 0; to: 1
+        duration: AnimConfig.termExpandDur
+        easing.type: AnimConfig.termExpandEasing
         onFinished: {
             termLineTop.visible = false
             termLineBottom.visible = false
-            root.animPhase = 3
+            root.animPhase = 4
         }
     }
 
@@ -182,7 +192,7 @@ Window {
             easing.type: AnimConfig.panelFadeEasing
         }
 
-        onFinished: root.animPhase = 4
+        onFinished: root.animPhase = 5
     }
 
     // ── Globe intro trigger ──────────────────────────────────────────────────
@@ -199,7 +209,7 @@ Window {
         interval: AnimConfig.globeStartDelay
         onTriggered: {
             root.globeReady = true
-            root.animPhase = 5
+            root.animPhase = 6
         }
     }
 
@@ -213,12 +223,15 @@ Window {
             termExpandAnim.start()
             break
         case 3:
-            panelFadeTimer.start()
+            termContentAnim.start()
             break
         case 4:
-            globeStartTimer.start()
+            panelFadeTimer.start()
             break
         case 5:
+            globeStartTimer.start()
+            break
+        case 6:
             // Animation complete
             break
         }
@@ -234,7 +247,7 @@ Window {
                 root.animPhase = 1
             } else {
                 // No terminal: skip straight to panel fade
-                root.animPhase = 3
+                root.animPhase = 4
             }
         }
     }
