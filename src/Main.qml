@@ -21,9 +21,12 @@ Window {
 
     // ── Phase tracking ───────────────────────────────────────────────────────
     // Phases: 0 = blank, 1 = terminal line appears, 2 = lines expand,
-    //         3 = terminal content fades in, 4 = panels fade in, 
+    //         3 = terminal content fades in, 4 = panels fade in,
     //         5 = globe intro, 6 = done
     property int animPhase: 0
+
+    // ── Terminal reveal animation state ──────────────────────────────────────
+    property real termRevealHalfHeight: 0
 
     // 1. Dot grid background
     ShaderEffect {
@@ -69,7 +72,7 @@ Window {
             opacity: 0
         }
 
-        // Terminal Column (Optional) with reveal animation
+        // Terminal Column (Optional)
         TilingPanelWrapper {
             id: wrapperTerm
             panelId: "terminal"
@@ -78,35 +81,6 @@ Window {
             SplitView.minimumWidth: 300
             clip: true
             opacity: 0
-
-            // Reveal animation state
-            property real revealHalfHeight: 0
-
-            // Top reveal line (moves upward from center)
-            Rectangle {
-                id: termLineTop
-                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
-                z: 500
-                anchors.left: parent.left
-                anchors.right: parent.right
-                y: parent.height / 2 - wrapperTerm.revealHalfHeight
-                height: 2
-                color: Style.accentGold
-                opacity: 0
-            }
-
-            // Bottom reveal line (moves downward from center)
-            Rectangle {
-                id: termLineBottom
-                visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
-                z: 500
-                anchors.left: parent.left
-                anchors.right: parent.right
-                y: parent.height / 2 + wrapperTerm.revealHalfHeight - 2
-                height: 2
-                color: Style.accentGold
-                opacity: 0
-            }
         }
 
         // Restore layout state on startup
@@ -115,6 +89,45 @@ Window {
             if (savedMain) mainSplit.restoreState(savedMain)
             // Populate panels into their saved slots
             LayoutStore.restorePanelAssignments(panelRegistry)
+        }
+    }
+
+    // ── Terminal reveal lines (outside wrapper so visible during opacity=0) ───
+    // Position computed from wrapperTerm's screen position
+
+    // Top reveal line (moves upward from center)
+    Rectangle {
+        id: termLineTop
+        visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
+        z: 500
+        width: wrapperTerm.width
+        height: 2
+        color: Style.accentGold
+        opacity: 0
+
+        // Position in root coordinates
+        x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
+        y: {
+            let termCenterY = wrapperTerm.mapToItem(root.contentItem, 0, 0).y + wrapperTerm.height / 2
+            return termCenterY - root.termRevealHalfHeight
+        }
+    }
+
+    // Bottom reveal line (moves downward from center)
+    Rectangle {
+        id: termLineBottom
+        visible: buildTerminal && root.animPhase >= 1 && root.animPhase <= 3
+        z: 500
+        width: wrapperTerm.width
+        height: 2
+        color: Style.accentGold
+        opacity: 0
+
+        // Position in root coordinates
+        x: wrapperTerm.mapToItem(root.contentItem, 0, 0).x
+        y: {
+            let termCenterY = wrapperTerm.mapToItem(root.contentItem, 0, 0).y + wrapperTerm.height / 2
+            return termCenterY + root.termRevealHalfHeight - 2
         }
     }
 
@@ -143,8 +156,8 @@ Window {
     // Phase 2: Lines expand outward (up/down) - no content yet
     NumberAnimation {
         id: termExpandAnim
-        target: wrapperTerm
-        property: "revealHalfHeight"
+        target: root
+        property: "termRevealHalfHeight"
         from: 1; to: wrapperTerm.height / 2
         duration: AnimConfig.termExpandDur
         easing.type: AnimConfig.termExpandEasing
@@ -238,6 +251,7 @@ Window {
     }
 
     // ── Startup kick-off ─────────────────────────────────────────────────────
+    // Delay slightly to ensure SplitView layout is complete
     Timer {
         id: startupTimer
         interval: AnimConfig.startDelay
