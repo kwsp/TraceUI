@@ -30,7 +30,9 @@ Item {
         root.hostedPanel  = theirPanel
         other.hostedPanel = myPanel
         // Persist the new assignment
-        LayoutStore.savePanelAssignments(panelRegistry)
+        if (typeof panelRegistry !== "undefined") {
+            LayoutStore.savePanelAssignments(panelRegistry)
+        }
     }
 
     // ── Drop area (whole slot accepts drops) ──────────────────────────────────

@@ -80,8 +80,8 @@ Window {
     }
 
     // All panel instances live here, parented to root so they survive reparenting
-    SystemPanel  { id: sysPanel;  visible: false }
-    NetworkPanel { id: netPanel;  visible: false }
+    SystemPanel  { id: sysPanel;  visible: false; width: 400; height: 700 }
+    NetworkPanel { id: netPanel;  visible: false; width: 400; height: 700 }
     Loader {
         id: termLoader
         active: buildTerminal

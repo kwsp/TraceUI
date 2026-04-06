@@ -127,7 +127,7 @@ Item {
                     width: 30
                     z: 10
                     Text { text: " 0.61"; color: Style.textLabel; font.pixelSize: 8; font.family: Style.fontData }
-                    Item { SplitView.fillHeight: true; height: 70 }
+                    Item { height: 70; width: 1 }
                     Text { text: "-1.61"; color: Style.textLabel; font.pixelSize: 8; font.family: Style.fontData; anchors.bottom: parent.bottom }
                 }
 
