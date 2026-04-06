@@ -2,19 +2,22 @@ import QtQuick
 import TraceUI
 
 // Container for terminal panel with turn-on reveal animation.
-// Manages the reveal sequence: lines appear, expand, then terminal content fades in.
+// Manages the reveal sequence: lines appear → expand → pause → content fades in.
 Item {
     id: root
     implicitWidth: 500
     implicitHeight: 400
-    clip: true
 
-    // ── Public API ───────────────────────────────────────────────────────────
+    // ── Configuration ────────────────────────────────────────────────────────
     property alias reveal: turnOnReveal
     property alias terminal: terminalLoader.item
+    property bool  terminalActive: true
+    property url   terminalSource: "qrc:/qt/qml/TraceUITerminal/TerminalPanel.qml"
 
+    // ── Signals ──────────────────────────────────────────────────────────────
     signal revealComplete()
 
+    // ── API ──────────────────────────────────────────────────────────────────
     function startReveal() {
         turnOnReveal.start()
     }
@@ -25,33 +28,26 @@ Item {
         anchors.fill: parent
         z: 100
 
-        onExpandComplete: {
-            // Terminal content fades in between the lines
-            terminalFadeIn.start()
-        }
-
-        onDone: {
-            root.revealComplete()
-        }
+        onExpandComplete: terminalFadeIn.start()
+        onDone: root.revealComplete()
     }
 
     // ── Terminal content ──────────────────────────────────────────────────────
     Loader {
         id: terminalLoader
         anchors.fill: parent
-        active: buildTerminal
-        source: "qrc:/qt/qml/TraceUITerminal/TerminalPanel.qml"
+        active: root.terminalActive
+        source: root.terminalSource
         opacity: 0
-        z: 50
     }
 
-    // ── Content fade-in animation ─────────────────────────────────────────────
+    // ── Content fade-in ──────────────────────────────────────────────────────
     NumberAnimation {
         id: terminalFadeIn
         target: terminalLoader
         property: "opacity"
         from: 0; to: 1
-        duration: AnimConfig.termExpandDur
-        easing.type: AnimConfig.termExpandEasing
+        duration: turnOnReveal.contentFadeDur
+        easing.type: turnOnReveal.easingType
     }
 }

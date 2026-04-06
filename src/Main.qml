@@ -75,17 +75,14 @@ Window {
             visible: buildTerminal
             SplitView.preferredWidth: 500
             SplitView.minimumWidth: 300
-            clip: true
-            opacity: 1  // Container manages opacity
 
             // Terminal container with built-in reveal animation
             TerminalContainer {
                 id: terminalContainer
                 anchors.fill: parent
+                terminalActive: buildTerminal
 
-                onRevealComplete: {
-                    root.animPhase = 2
-                }
+                onRevealComplete: root.animPhase = 2
             }
         }
 
@@ -120,9 +117,6 @@ Window {
         onFinished: root.animPhase = 3
     }
 
-    // ── Globe intro trigger ──────────────────────────────────────────────────
-    property bool globeReady: false
-
     Timer {
         id: panelFadeTimer
         interval: AnimConfig.panelFadeDelay
@@ -133,7 +127,7 @@ Window {
         id: globeStartTimer
         interval: AnimConfig.globeStartDelay
         onTriggered: {
-            root.globeReady = true
+            netPanel.globeIntroActive = true
             root.animPhase = 4
         }
     }

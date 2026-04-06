@@ -2,123 +2,120 @@ import QtQuick
 import TraceUI
 
 // Reusable "turn on" reveal animation: two horizontal lines appear at center,
-// then expand outward (up/down) to reveal content. Lines become top/bottom borders.
+// then expand outward (up/down). Lines hold position as borders, then signal
+// expandComplete so the caller can fade in content.
 //
 // Usage:
 //   TurnOnReveal {
-//       id: reveal
 //       anchors.fill: parent
-//       onExpandComplete: myContent.opacity = 1
-//       onDone: reveal.visible = false
+//       onExpandComplete: contentFadeAnim.start()
+//       onDone: ...
 //   }
-//   Component.onCompleted: reveal.start()
 
 Item {
     id: root
-    clip: true
 
     // ── Configuration ────────────────────────────────────────────────────────
-    property color lineColor: Style.accentGold
-    property int lineThickness: 1
-    property int appearDuration: AnimConfig.termLineAppearDur   // fade-in time
-    property int expandDuration: AnimConfig.termExpandDur       // expansion time
-    property int contentDelay: AnimConfig.termContentDelay      // pause before expandComplete
-    property int easingType: AnimConfig.termExpandEasing
+    property color lineColor:       Style.accentGold
+    property int   lineThickness:   1
+    property int   appearDuration:  AnimConfig.termLineAppearDur
+    property int   expandDuration:  AnimConfig.termExpandDur
+    property int   contentDelay:    AnimConfig.termContentDelay
+    property int   contentFadeDur:  AnimConfig.termContentFadeDur
+    property int   easingType:      AnimConfig.termExpandEasing
 
-    // ── State ─────────────────────────────────────────────────────────────────
-    property real halfHeight: 0
-    property bool running: false
+    // ── Read-only state ──────────────────────────────────────────────────────
+    readonly property bool running: _running
+    property real _halfHeight: 0
+    property bool _running: false
 
-    // ── Signals ───────────────────────────────────────────────────────────────
-    signal expandComplete()   // Lines finished expanding, content can fade in
-    signal done()             // Full animation complete, hide lines
+    // ── Signals ──────────────────────────────────────────────────────────────
+    signal expandComplete()   // Lines at edges; content can start fading in
+    signal done()             // Entire sequence finished (incl. content fade time)
 
-    // ── API ───────────────────────────────────────────────────────────────────
+    // ── API ──────────────────────────────────────────────────────────────────
     function start() {
-        if (running) return
-        running = true
-        lineAppearAnim.start()
+        if (_running) return
+        _running = true
+        _lineAppearAnim.start()
     }
 
     function reset() {
-        running = false
-        halfHeight = 0
+        _lineAppearAnim.stop()
+        _lineExpandAnim.stop()
+        _contentDelayTimer.stop()
+        _doneTimer.stop()
+        _running = false
+        _halfHeight = 0
         lineTop.opacity = 0
         lineBottom.opacity = 0
-        lineTop.visible = true
-        lineBottom.visible = true
     }
 
-    // ── Lines ─────────────────────────────────────────────────────────────────
+    // ── Lines ────────────────────────────────────────────────────────────────
     Rectangle {
         id: lineTop
         anchors.left: parent.left
         anchors.right: parent.right
-        y: parent.height / 2 - root.halfHeight
+        y: parent.height / 2 - root._halfHeight
         height: root.lineThickness
         color: root.lineColor
         opacity: 0
-        visible: root.running
+        visible: root._running
     }
 
     Rectangle {
         id: lineBottom
         anchors.left: parent.left
         anchors.right: parent.right
-        y: parent.height / 2 + root.halfHeight - root.lineThickness
+        y: parent.height / 2 + root._halfHeight - root.lineThickness
         height: root.lineThickness
         color: root.lineColor
         opacity: 0
-        visible: root.running
+        visible: root._running
     }
 
-    // ── Animations ────────────────────────────────────────────────────────────
+    // ── Internal animations ──────────────────────────────────────────────────
 
-    // Phase 1: Lines appear at center (opacity only)
+    // Step 1: Fade lines in at center
     SequentialAnimation {
-        id: lineAppearAnim
+        id: _lineAppearAnim
         ParallelAnimation {
             NumberAnimation {
-                target: lineTop
-                property: "opacity"
-                from: 0; to: 1
-                duration: root.appearDuration
+                target: lineTop; property: "opacity"
+                from: 0; to: 1; duration: root.appearDuration
             }
             NumberAnimation {
-                target: lineBottom
-                property: "opacity"
-                from: 0; to: 1
-                duration: root.appearDuration
+                target: lineBottom; property: "opacity"
+                from: 0; to: 1; duration: root.appearDuration
             }
         }
-        ScriptAction { script: lineExpandAnim.start() }
+        ScriptAction { script: _lineExpandAnim.start() }
     }
 
-    // Phase 2: Lines expand outward
+    // Step 2: Expand lines outward
     NumberAnimation {
-        id: lineExpandAnim
-        target: root
-        property: "halfHeight"
+        id: _lineExpandAnim
+        target: root; property: "_halfHeight"
         from: 1; to: root.height / 2
         duration: root.expandDuration
         easing.type: root.easingType
-        onFinished: contentDelayTimer.start()
+        onFinished: _contentDelayTimer.start()
     }
 
-    // Phase 3: Pause before signaling expandComplete
+    // Step 3: Pause, then signal expandComplete
     Timer {
-        id: contentDelayTimer
+        id: _contentDelayTimer
         interval: root.contentDelay
         onTriggered: {
             root.expandComplete()
-            doneTimer.start()
+            _doneTimer.start()
         }
     }
 
-    // Phase 4: Signal done after content has time to appear
+    // Step 4: Wait for content fade to finish, then signal done and clean up
     Timer {
-        id: doneTimer
-        interval: root.expandDuration
+        id: _doneTimer
+        interval: root.contentFadeDur
         onTriggered: {
             lineTop.visible = false
             lineBottom.visible = false
