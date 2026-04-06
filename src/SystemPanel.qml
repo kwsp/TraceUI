@@ -211,12 +211,13 @@ Item {
             spacing: 2
 
             // Column widths - must match header and delegate
-            readonly property int colPid: 45
-            readonly property int colCpu: 50
-            readonly property int colMem: 55
+            readonly property int colPid: 40
+            readonly property int colCpu: 45
+            readonly property int colMem: 50
             readonly property int colSpacing: 1
 
             header: Row {
+                id: headerRow
                 width: processList.width
                 height: 18
                 spacing: processList.colSpacing
@@ -228,7 +229,7 @@ Item {
                     font.family: Style.fontData
                 }
                 Text { 
-                    width: processList.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
+                    width: headerRow.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
                     text: "NAME" 
                     color: Style.textLabel
                     font.pixelSize: Style.sizeLabel
@@ -285,13 +286,12 @@ Item {
                     font.family: Style.fontData
                 }
                 Text {
-                    width: processList.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
+                    width: procRow.width - processList.colPid - processList.colCpu - processList.colMem - (processList.colSpacing * 3)
                     text: procRow.name
                     color: Style.textPrimary
                     font.pixelSize: Style.sizeData
                     font.family: Style.fontData
                     elide: Text.ElideRight
-                    clip: true
                 }
                 Text { 
                     width: processList.colCpu
