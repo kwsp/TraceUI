@@ -360,7 +360,10 @@ QString TerminalBackend::getLineHtml(int row) const {
 
     // Pre-allocate generously: typical line ~cols chars + markup overhead
     QString html;
-    html.reserve(m_cols * 6);
+    html.reserve(m_cols * 8);
+
+    // Wrap in <pre> to prevent whitespace collapse and enforce monospace layout.
+    html.append(QStringLiteral("<pre style=\"margin:0;white-space:pre;\">"));
 
     // Track current span attributes to batch consecutive cells
     QString curFg, curBg;
@@ -427,5 +430,6 @@ QString TerminalBackend::getLineHtml(int row) const {
     }
 
     closeSpan();
+    html.append(QStringLiteral("</pre>"));
     return html;
 }
