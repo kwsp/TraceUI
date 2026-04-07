@@ -64,8 +64,9 @@ void TerminalRenderer::geometryChange(const QRectF &newGeo, const QRectF &oldGeo
 void TerminalRenderer::recalcMetrics() {
     QFont font(m_fontFamily, m_fontSize);
     QFontMetricsF fm(font);
-    qreal w = fm.horizontalAdvance('M');
-    qreal h = fm.height();
+    // Snap to integer cell dimensions to eliminate sub-pixel gaps between rows/cols.
+    qreal w = std::ceil(fm.horizontalAdvance('M'));
+    qreal h = std::ceil(fm.height());
     if (w != m_cellWidth || h != m_cellHeight) {
         m_cellWidth = w;
         m_cellHeight = h;
@@ -75,7 +76,29 @@ void TerminalRenderer::recalcMetrics() {
 }
 
 // ── Glyph atlas ──────────────────────────────────────────────────────────────
-// Layout: 16-column grid of cells covering ASCII 32..126 (95 glyphs).
+// Layout: 16-column grid covering ASCII + box-drawing + block elements.
+
+// Codepoint ranges to include in the atlas.
+struct CodepointRange {
+    uint32_t first, last;
+};
+
+static constexpr CodepointRange kAtlasRanges[] = {
+    {0x0020, 0x007E}, // ASCII printable (95)
+    {0x00A0, 0x00FF}, // Latin-1 Supplement (96) — accented chars, ¡¢£ etc.
+    {0x2500, 0x257F}, // Box Drawing (128)
+    {0x2580, 0x259F}, // Block Elements (32)
+    {0x2190, 0x21FF}, // Arrows (112)
+    {0x25A0, 0x25FF}, // Geometric Shapes (96)
+    {0x2600, 0x26FF}, // Misc Symbols (256)
+};
+
+static int totalGlyphCount() {
+    int n = 0;
+    for (const auto &r : kAtlasRanges)
+        n += static_cast<int>(r.last - r.first + 1);
+    return n;
+}
 
 void TerminalRenderer::rebuildAtlas() {
     if (!m_atlasDirty && !m_uvCache.isEmpty())
@@ -83,14 +106,12 @@ void TerminalRenderer::rebuildAtlas() {
 
     QFont font(m_fontFamily, m_fontSize);
 
-    constexpr int kFirst = 32;
-    constexpr int kLast = 126;
-    constexpr int kCount = kLast - kFirst + 1; // 95
-    constexpr int kCols = 16;
-    const int kRows = (kCount + kCols - 1) / kCols; // 6
+    const int glyphCount = totalGlyphCount();
+    constexpr int kCols = 32;
+    const int kRows = (glyphCount + kCols - 1) / kCols;
 
-    int cw = static_cast<int>(std::ceil(m_cellWidth));
-    int ch = static_cast<int>(std::ceil(m_cellHeight));
+    int cw = static_cast<int>(m_cellWidth);
+    int ch = static_cast<int>(m_cellHeight);
     int atlasW = cw * kCols;
     int atlasH = ch * kRows;
 
@@ -103,22 +124,25 @@ void TerminalRenderer::rebuildAtlas() {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     m_uvCache.clear();
+    m_uvCache.reserve(glyphCount);
 
-    for (int i = 0; i < kCount; ++i) {
-        uint32_t cp = kFirst + i;
-        int col = i % kCols;
-        int row = i / kCols;
-        qreal x = col * m_cellWidth;
-        qreal y = row * m_cellHeight + m_ascent;
+    int idx = 0;
+    for (const auto &range : kAtlasRanges) {
+        for (uint32_t cp = range.first; cp <= range.last; ++cp, ++idx) {
+            int col = idx % kCols;
+            int row = idx / kCols;
+            qreal x = col * m_cellWidth;
+            qreal y = row * m_cellHeight + m_ascent;
 
-        painter.drawText(QPointF(x, y), QString(QChar(cp)));
+            painter.drawText(QPointF(x, y), QString::fromUcs4(&cp, 1));
 
-        GlyphUV uv;
-        uv.u1 = static_cast<float>(col * m_cellWidth) / atlasW;
-        uv.v1 = static_cast<float>(row * m_cellHeight) / atlasH;
-        uv.u2 = static_cast<float>((col + 1) * m_cellWidth) / atlasW;
-        uv.v2 = static_cast<float>((row + 1) * m_cellHeight) / atlasH;
-        m_uvCache[cp] = uv;
+            GlyphUV uv;
+            uv.u1 = static_cast<float>(col * m_cellWidth) / atlasW;
+            uv.v1 = static_cast<float>(row * m_cellHeight) / atlasH;
+            uv.u2 = static_cast<float>((col + 1) * m_cellWidth) / atlasW;
+            uv.v2 = static_cast<float>((row + 1) * m_cellHeight) / atlasH;
+            m_uvCache[cp] = uv;
+        }
     }
 
     painter.end();
@@ -190,7 +214,7 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             vterm_screen_get_cell(screen, pos, &cell);
 
             uint32_t cp = cell.chars[0];
-            if (cp < 32 || cp > 126)
+            if (cp == 0)
                 cp = ' ';
 
             const GlyphUV &uv = m_uvCache.value(cp, m_spaceUV);

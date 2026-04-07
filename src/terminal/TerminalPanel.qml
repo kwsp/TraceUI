@@ -5,24 +5,21 @@ import TraceUITerminal
 FocusScope {
     id: root
 
+    property alias backend: termBackend
+
     TerminalBackend {
         id: termBackend
     }
 
-    TerminalModel {
-        id: termModel
-        backend: termBackend
-    }
-
     Component.onCompleted: {
-        terminalView.updateDimensions()
+        renderer.updateGridSize()
         termBackend.start()
         root.forceActiveFocus()
     }
 
     Rectangle {
         anchors.fill: parent
-        color: Style.panelBg
+        color: Style.backgroundColor
         border.color: root.activeFocus ? Style.accentGold : Style.borderDefault
         border.width: 1
 
@@ -31,62 +28,49 @@ FocusScope {
             onClicked: root.forceActiveFocus()
         }
 
-        ListView {
-            id: terminalView
+        TerminalRenderer {
+            id: renderer
             anchors.fill: parent
-            anchors.margins: 10
-            model: termModel
-            clip: true
-            interactive: false
+            anchors.margins: 4
+            backend: termBackend
+            fontFamily: Style.fontData
+            fontSize: 14
 
-            onWidthChanged: updateDimensions()
-            onHeightChanged: updateDimensions()
+            onCellMetricsChanged: updateGridSize()
+            onWidthChanged: updateGridSize()
+            onHeightChanged: updateGridSize()
 
-            function updateDimensions() {
-                if (width > 0 && height > 0) {
-                    let newCols = Math.floor(width / 9)
-                    let newRows = Math.floor(height / 18)
-                    termBackend.resize(newRows, newCols)
-                }
-            }
-
-            delegate: Text {
-                width: terminalView.width
-                height: 18
-                text: model.text
-                textFormat: Text.RichText
-                color: Style.textPrimary
-                font.family: Style.fontData
-                font.pixelSize: 14
-                verticalAlignment: Text.AlignVCenter
-            }
-
-            Connections {
-                target: termBackend
-                function onCursorMoved() {
-                    let rowY = termBackend.cursorRow * 18
-                    if (rowY < terminalView.contentY) {
-                        terminalView.contentY = rowY
-                    } else if (rowY + 18 > terminalView.contentY + terminalView.height) {
-                        terminalView.contentY = rowY + 18 - terminalView.height
+            function updateGridSize() {
+                if (width > 0 && height > 0 && cellWidth > 0 && cellHeight > 0) {
+                    let newCols = Math.floor(width / cellWidth)
+                    let newRows = Math.floor(height / cellHeight)
+                    if (newCols > 0 && newRows > 0) {
+                        termBackend.resize(newRows, newCols)
                     }
                 }
             }
         }
 
+        // Blinking cursor overlay
         Rectangle {
             id: cursor
-            width: 9
-            height: 18
+            width: renderer.cellWidth
+            height: renderer.cellHeight
             color: Style.accentGold
-            x: 10 + termBackend.cursorCol * 9
-            y: 10 + termBackend.cursorRow * 18 - terminalView.contentY
-            visible: root.activeFocus && y >= 10 && y <= terminalView.height + 10
+            opacity: cursorBlink.running ? cursorOpacity : 1.0
+            x: renderer.x + termBackend.cursorCol * renderer.cellWidth
+            y: renderer.y + termBackend.cursorRow * renderer.cellHeight
+            visible: root.activeFocus
+                     && y >= renderer.y
+                     && y + height <= renderer.y + renderer.height
 
-            SequentialAnimation on opacity {
+            property real cursorOpacity: 1.0
+            SequentialAnimation {
+                id: cursorBlink
                 loops: Animation.Infinite
-                NumberAnimation { from: 1.0; to: 0.0; duration: 500 }
-                NumberAnimation { from: 0.0; to: 1.0; duration: 500 }
+                running: root.activeFocus
+                NumberAnimation { target: cursor; property: "cursorOpacity"; from: 1.0; to: 0.0; duration: 500 }
+                NumberAnimation { target: cursor; property: "cursorOpacity"; from: 0.0; to: 1.0; duration: 500 }
             }
         }
     }
