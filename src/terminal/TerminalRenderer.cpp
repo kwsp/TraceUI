@@ -1,167 +1,215 @@
 #include "TerminalRenderer.h"
-#include <QFontMetrics>
+#include <QFontMetricsF>
 #include <QPainter>
 #include <QPainterPath>
 #include <QQuickWindow>
-#include <QSGFlatColorMaterial>
 #include <QSGGeometryNode>
 #include <QSGTextureMaterial>
+#include <cmath>
+#include <vterm.h>
 
-TerminalRenderer::TerminalRenderer(QQuickItem* parent) : QQuickItem(parent) {
+// ── Lifecycle ────────────────────────────────────────────────────────────────
+
+TerminalRenderer::TerminalRenderer(QQuickItem *parent) : QQuickItem(parent) {
     setFlag(ItemHasContents, true);
+    recalcMetrics();
 }
 
 TerminalRenderer::~TerminalRenderer() = default;
 
-void TerminalRenderer::setBackend(TerminalBackend* backend) {
-    if (m_backend == backend) return;
-    if (m_backend) {
-        disconnect(m_backend, &TerminalBackend::screenDamaged, this, &TerminalRenderer::update);
-    }
+// ── Property setters ─────────────────────────────────────────────────────────
+
+void TerminalRenderer::setBackend(TerminalBackend *backend) {
+    if (m_backend == backend)
+        return;
+    if (m_backend)
+        disconnect(m_backend, nullptr, this, nullptr);
     m_backend = backend;
-    if (m_backend) {
-        connect(m_backend, &TerminalBackend::screenDamaged, this, &TerminalRenderer::update);
-    }
+    if (m_backend)
+        connect(m_backend, &TerminalBackend::screenDamaged, this, [this] { update(); });
     emit backendChanged();
     update();
 }
 
-void TerminalRenderer::setFontData(const QString& font) {
-    if (m_fontData == font) return;
-    m_fontData = font;
-    m_fontDirty = true;
-    m_metricsDirty = true;
-    emit fontDataChanged();
+void TerminalRenderer::setFontFamily(const QString &family) {
+    if (m_fontFamily == family)
+        return;
+    m_fontFamily = family;
+    m_atlasDirty = true;
+    recalcMetrics();
+    emit fontFamilyChanged();
     update();
 }
 
 void TerminalRenderer::setFontSize(int size) {
-    if (m_fontSize == size) return;
+    if (size < 1 || m_fontSize == size)
+        return;
     m_fontSize = size;
-    m_fontDirty = true;
-    m_metricsDirty = true;
+    m_atlasDirty = true;
+    recalcMetrics();
     emit fontSizeChanged();
     update();
 }
 
-void TerminalRenderer::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) {
-    QQuickItem::geometryChange(newGeometry, oldGeometry);
+void TerminalRenderer::ensureMetrics() {
+    recalcMetrics();
+}
+
+void TerminalRenderer::geometryChange(const QRectF &newGeo, const QRectF &oldGeo) {
+    QQuickItem::geometryChange(newGeo, oldGeo);
     update();
 }
 
-void TerminalRenderer::updateCellMetrics() {
-    if (!m_metricsDirty) return;
+// ── Font metrics ─────────────────────────────────────────────────────────────
 
-    QFont font(m_fontData, m_fontSize);
+void TerminalRenderer::recalcMetrics() {
+    QFont font(m_fontFamily, m_fontSize);
     QFontMetricsF fm(font);
-    m_cellWidth = fm.horizontalAdvance('W');
-    m_cellHeight = fm.height();
-    m_metricsDirty = false;
-    emit cellMetricsChanged();
+    qreal w = fm.horizontalAdvance('M');
+    qreal h = fm.height();
+    if (w != m_cellWidth || h != m_cellHeight) {
+        m_cellWidth = w;
+        m_cellHeight = h;
+        m_ascent = fm.ascent();
+        emit cellMetricsChanged();
+    }
 }
 
-void TerminalRenderer::updateGlyphAtlas() {
-    updateCellMetrics();
-    if (!m_fontDirty && m_atlasTexture) return;
+// ── Glyph atlas ──────────────────────────────────────────────────────────────
+// Layout: 16-column grid of cells covering ASCII 32..126 (95 glyphs).
+// Atlas dimensions are small and always valid (16×6 cells ≈ ~150×100 px).
 
-    QFont font(m_fontData, m_fontSize);
+void TerminalRenderer::rebuildAtlas() {
+    if (!m_atlasDirty && !m_uvCache.isEmpty())
+        return;
+
+    QFont font(m_fontFamily, m_fontSize);
     m_rawFont = QRawFont::fromFont(font);
-    m_glyphCache.clear();
+    m_uvCache.clear();
 
-    // Basic ASCII for now
-    QList<quint32> glyphIndices;
-    for (int i = 32; i < 127; ++i) {
-        glyphIndices.append(m_rawFont.glyphIndexesForString(QString(QChar(i)))[0]);
-    }
+    constexpr int kFirst = 32;
+    constexpr int kLast = 126;
+    constexpr int kCount = kLast - kFirst + 1; // 95
+    constexpr int kCols = 16;
+    const int kRows = (kCount + kCols - 1) / kCols; // 6
 
-    // Determine cell size
-    qreal cellWidth = m_cellWidth;
-    qreal cellHeight = m_cellHeight;
+    int cw = static_cast<int>(std::ceil(m_cellWidth));
+    int ch = static_cast<int>(std::ceil(m_cellHeight));
+    int atlasW = cw * kCols;
+    int atlasH = ch * kRows;
 
-    // Create atlas (simple horizontal strip for now)
-    int atlasWidth = static_cast<int>(std::ceil(cellWidth * glyphIndices.size()));
-    int atlasHeight = static_cast<int>(std::ceil(cellHeight));
+    m_atlasImage = QImage(atlasW, atlasH, QImage::Format_ARGB32_Premultiplied);
+    m_atlasImage.fill(Qt::transparent);
 
-    QImage atlas(atlasWidth, atlasHeight, QImage::Format_Alpha8);
-    atlas.fill(0);
-    QPainter painter(&atlas);
+    QPainter painter(&m_atlasImage);
+    painter.setFont(font);
+    painter.setPen(Qt::white);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    for (int i = 0; i < glyphIndices.size(); ++i) {
-        uint32_t index = glyphIndices[i];
-        QPointF pos(i * cellWidth, m_rawFont.ascent());
-        QPainterPath path = m_rawFont.pathForGlyph(index);
-        painter.fillPath(path.translated(pos), Qt::white);
+    for (int i = 0; i < kCount; ++i) {
+        uint32_t cp = kFirst + i;
+        int col = i % kCols;
+        int row = i / kCols;
+        qreal x = col * m_cellWidth;
+        qreal y = row * m_cellHeight + m_ascent;
 
-        m_glyphCache[index] = {index, QRectF(qreal(i * cellWidth) / atlasWidth, 0,
-                                             cellWidth / atlasWidth, 1.0)};
+        painter.drawText(QPointF(x, y), QString(QChar(cp)));
+
+        GlyphUV uv;
+        uv.u1 = static_cast<float>(col * m_cellWidth) / atlasW;
+        uv.v1 = static_cast<float>(row * m_cellHeight) / atlasH;
+        uv.u2 = static_cast<float>((col + 1) * m_cellWidth) / atlasW;
+        uv.v2 = static_cast<float>((row + 1) * m_cellHeight) / atlasH;
+        m_uvCache[cp] = uv;
     }
 
-    m_atlasTexture.reset(window()->createTextureFromImage(atlas));
-    m_fontDirty = false;
+    painter.end();
+    m_spaceUV = m_uvCache.value(' ');
+
+    // Texture will be created/updated in updatePaintNode (needs window context)
+    m_atlasDirty = false;
 }
 
-QSGNode* TerminalRenderer::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) {
-    if (!m_backend || !window()) return oldNode;
+// ── Scene graph ──────────────────────────────────────────────────────────────
 
-    updateGlyphAtlas();
+QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) {
+    if (!m_backend || !window())
+        return oldNode;
 
-    auto* node = static_cast<QSGGeometryNode*>(oldNode);
+    rebuildAtlas();
+
+    // (Re-)create atlas texture if needed
+    if (!m_atlasTexture || m_atlasTexture->textureSize() != m_atlasImage.size()) {
+        delete m_atlasTexture;
+        m_atlasTexture =
+            window()->createTextureFromImage(m_atlasImage, QQuickWindow::TextureCanUseAtlas);
+    }
+
+    const int rows = m_backend->rows();
+    const int cols = m_backend->cols();
+    const int cellCount = rows * cols;
+    const int vertexCount = cellCount * 6; // 2 triangles per cell
+
+    auto *node = static_cast<QSGGeometryNode *>(oldNode);
     if (!node) {
         node = new QSGGeometryNode;
         node->setFlag(QSGNode::OwnsGeometry);
         node->setFlag(QSGNode::OwnsMaterial);
 
-        auto* material = new QSGTextureMaterial;
-        material->setTexture(m_atlasTexture.get());
-        node->setMaterial(material);
+        auto *geom = new QSGGeometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), vertexCount);
+        geom->setDrawingMode(QSGGeometry::DrawTriangles);
+        node->setGeometry(geom);
 
-        auto* geometry = new QSGGeometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), 0);
-        node->setGeometry(geometry);
+        auto *mat = new QSGTextureMaterial;
+        mat->setTexture(m_atlasTexture);
+        mat->setFiltering(QSGTexture::Linear);
+        node->setMaterial(mat);
+    } else {
+        // Update material texture pointer (atlas may have been rebuilt)
+        auto *mat = static_cast<QSGTextureMaterial *>(node->material());
+        mat->setTexture(m_atlasTexture);
     }
 
-    int rows = m_backend->rows();
-    int cols = m_backend->cols();
-    
-    // Each cell is 2 triangles (6 vertices)
-    int vertexCount = rows * cols * 6;
-    auto* geometry = node->geometry();
-    geometry->allocate(vertexCount);
-    auto* vertices = geometry->vertexDataAsTexturedPoint2D();
+    auto *geom = node->geometry();
+    if (geom->vertexCount() != vertexCount)
+        geom->allocate(vertexCount);
 
-    int vIdx = 0;
+    auto *v = geom->vertexDataAsTexturedPoint2D();
+
+    // Read cells directly from libvterm — avoids QString allocation per row
+    int vi = 0;
     for (int r = 0; r < rows; ++r) {
-        QString line = m_backend->getLineText(r);
         for (int c = 0; c < cols; ++c) {
-            uint32_t cp = (c < line.length()) ? line[c].unicode() : ' ';
-            
-            // Simplified: only ASCII 32-126 supported in atlas for now
-            if (cp < 32 || cp > 126) cp = ' ';
-            
-            uint32_t glyphIdx = m_rawFont.glyphIndexesForString(QString(QChar(cp)))[0];
-            const auto& gInfo = m_glyphCache[glyphIdx];
+            VTermPos pos = {r, c};
+            VTermScreenCell cell;
+            vterm_screen_get_cell(m_backend->screen(), pos, &cell);
 
-            qreal x1 = c * m_cellWidth;
-            qreal y1 = r * m_cellHeight;
-            qreal x2 = x1 + m_cellWidth;
-            qreal y2 = y1 + m_cellHeight;
+            uint32_t cp = cell.chars[0];
+            if (cp < 32 || cp > 126)
+                cp = ' ';
 
-            float u1 = gInfo.uvRect.left();
-            float v1 = gInfo.uvRect.top();
-            float u2 = gInfo.uvRect.right();
-            float v2 = gInfo.uvRect.bottom();
+            const GlyphUV &uv = m_uvCache.value(cp, m_spaceUV);
 
-            // Triangle 1
-            vertices[vIdx++].set(x1, y1, u1, v1);
-            vertices[vIdx++].set(x1, y2, u1, v2);
-            vertices[vIdx++].set(x2, y1, u2, v1);
-            // Triangle 2
-            vertices[vIdx++].set(x2, y1, u2, v1);
-            vertices[vIdx++].set(x1, y2, u1, v2);
-            vertices[vIdx++].set(x2, y2, u2, v2);
+            float x1 = static_cast<float>(c * m_cellWidth);
+            float y1 = static_cast<float>(r * m_cellHeight);
+            float x2 = static_cast<float>((c + 1) * m_cellWidth);
+            float y2 = static_cast<float>((r + 1) * m_cellHeight);
+
+            // Two triangles (CCW winding)
+            v[vi++].set(x1, y1, uv.u1, uv.v1);
+            v[vi++].set(x1, y2, uv.u1, uv.v2);
+            v[vi++].set(x2, y1, uv.u2, uv.v1);
+
+            v[vi++].set(x2, y1, uv.u2, uv.v1);
+            v[vi++].set(x1, y2, uv.u1, uv.v2);
+            v[vi++].set(x2, y2, uv.u2, uv.v2);
+
+            // Skip continuation cells for wide characters
+            if (cell.width > 1)
+                c += cell.width - 1;
         }
     }
 
-    node->markDirty(QSGNode::DirtyGeometry);
+    node->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
     return node;
 }

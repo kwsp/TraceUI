@@ -55,6 +55,9 @@ public:
     [[nodiscard]] QString getLineText(int row) const;
     [[nodiscard]] QString getLineHtml(int row) const;
 
+    /// Direct access for GPU renderer (avoids per-row QString allocation).
+    [[nodiscard]] VTermScreen *screen() const { return m_vts; }
+
 signals:
     void rowsChanged();
     void colsChanged();

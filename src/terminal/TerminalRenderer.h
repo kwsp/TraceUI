@@ -1,75 +1,76 @@
 #pragma once
 
+#include "TerminalBackend.h"
+#include <QHash>
 #include <QQuickItem>
+#include <QRawFont>
 #include <QSGGeometryNode>
 #include <QSGTexture>
-#include <QRawFont>
-#include <QHash>
-#include "TerminalBackend.h"
+#include <vector>
 
 class TerminalRenderer : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(TerminalBackend* backend READ backend WRITE setBackend NOTIFY backendChanged)
-    Q_PROPERTY(QString fontData READ fontData WRITE setFontData NOTIFY fontDataChanged)
+    Q_PROPERTY(TerminalBackend *backend READ backend WRITE setBackend NOTIFY backendChanged)
+    Q_PROPERTY(QString fontFamily READ fontFamily WRITE setFontFamily NOTIFY fontFamilyChanged)
     Q_PROPERTY(int fontSize READ fontSize WRITE setFontSize NOTIFY fontSizeChanged)
     Q_PROPERTY(qreal cellWidth READ cellWidth NOTIFY cellMetricsChanged)
     Q_PROPERTY(qreal cellHeight READ cellHeight NOTIFY cellMetricsChanged)
 
 public:
-    explicit TerminalRenderer(QQuickItem* parent = nullptr);
+    explicit TerminalRenderer(QQuickItem *parent = nullptr);
     ~TerminalRenderer() override;
 
-    TerminalBackend* backend() const { return m_backend; }
-    void setBackend(TerminalBackend* backend);
+    TerminalBackend *backend() const { return m_backend; }
+    void setBackend(TerminalBackend *backend);
 
-    QString fontData() const { return m_fontData; }
-    void setFontData(const QString& font);
+    QString fontFamily() const { return m_fontFamily; }
+    void setFontFamily(const QString &family);
 
     int fontSize() const { return m_fontSize; }
     void setFontSize(int size);
 
-    qreal cellWidth() const { 
-        const_cast<TerminalRenderer*>(this)->updateCellMetrics();
-        return m_cellWidth; 
-    }
-    qreal cellHeight() const { 
-        const_cast<TerminalRenderer*>(this)->updateCellMetrics();
-        return m_cellHeight; 
-    }
+    qreal cellWidth() const { return m_cellWidth; }
+    qreal cellHeight() const { return m_cellHeight; }
+
+    // Force metrics recalculation (e.g. after construction in tests)
+    void ensureMetrics();
 
 protected:
-    QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
-    void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
+    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
+    void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
 signals:
     void backendChanged();
-    void fontDataChanged();
+    void fontFamilyChanged();
     void fontSizeChanged();
     void cellMetricsChanged();
 
 private:
-    void updateGlyphAtlas();
-    void updateCellMetrics();
+    void rebuildAtlas();
+    void recalcMetrics();
 
-    TerminalBackend* m_backend = nullptr;
-    QString m_fontData = "Hack";
-    int m_fontSize = 12;
+    // ── Font / Atlas ─────────────────────────────────────────────────────────
+    QString m_fontFamily = "Hack";
+    int m_fontSize = 14;
     qreal m_cellWidth = 0;
     qreal m_cellHeight = 0;
+    qreal m_ascent = 0;
+    bool m_atlasDirty = true;
 
     QRawFont m_rawFont;
-    bool m_fontDirty = true;
-    bool m_metricsDirty = true;
 
-    struct GlyphInfo {
-        uint32_t index;
-        QRectF uvRect;
+    // Codepoint → UV rect in atlas.  Keyed by Unicode codepoint (not glyph index).
+    struct GlyphUV {
+        float u1, v1, u2, v2;
     };
-    QHash<uint32_t, GlyphInfo> m_glyphCache;
-    std::unique_ptr<QSGTexture> m_atlasTexture;
+    QHash<uint32_t, GlyphUV> m_uvCache; // codepoint → UV
+    GlyphUV m_spaceUV{};                // fallback for missing glyphs
 
-    int m_rows = 0;
-    int m_cols = 0;
+    QImage m_atlasImage;                  // kept for re-upload
+    QSGTexture *m_atlasTexture = nullptr; // owned by scene graph
+
+    // ── Backend ──────────────────────────────────────────────────────────────
+    TerminalBackend *m_backend = nullptr;
 };

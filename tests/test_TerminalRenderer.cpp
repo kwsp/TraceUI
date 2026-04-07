@@ -1,52 +1,75 @@
+#include "TerminalBackend.h"
+#include "TerminalRenderer.h"
 #include <QSignalSpy>
 #include <QTest>
-#include "TerminalRenderer.h"
-#include "TerminalBackend.h"
 
 class TestTerminalRenderer : public QObject {
     Q_OBJECT
 
 private slots:
-    void initTestCase() {
-        // Any global init
+    void testDefaultMetrics() {
+        TerminalRenderer renderer;
+        renderer.ensureMetrics();
+
+        QVERIFY(renderer.cellWidth() > 0);
+        QVERIFY(renderer.cellHeight() > 0);
+        QVERIFY(renderer.cellHeight() > renderer.cellWidth()); // monospace cells are taller
     }
 
-    void testProperties() {
+    void testFontSizeAffectsMetrics() {
         TerminalRenderer renderer;
-        QSignalSpy backendSpy(&renderer, &TerminalRenderer::backendChanged);
-        QSignalSpy fontSpy(&renderer, &TerminalRenderer::fontDataChanged);
-        QSignalSpy sizeSpy(&renderer, &TerminalRenderer::fontSizeChanged);
+        renderer.ensureMetrics();
 
-        renderer.setFontData("Courier");
-        QCOMPARE(renderer.fontData(), QString("Courier"));
-        QCOMPARE(fontSpy.count(), 1);
+        qreal h14 = renderer.cellHeight();
 
-        renderer.setFontSize(14);
-        QCOMPARE(renderer.fontSize(), 14);
-        QCOMPARE(sizeSpy.count(), 1);
+        QSignalSpy metricsSpy(&renderer, &TerminalRenderer::cellMetricsChanged);
+        renderer.setFontSize(24);
+        QCOMPARE(metricsSpy.count(), 1);
+        QVERIFY(renderer.cellHeight() > h14);
+    }
+
+    void testFontFamilySignal() {
+        TerminalRenderer renderer;
+        QSignalSpy spy(&renderer, &TerminalRenderer::fontFamilyChanged);
+
+        renderer.setFontFamily("Courier");
+        QCOMPARE(renderer.fontFamily(), QString("Courier"));
+        QCOMPARE(spy.count(), 1);
+
+        // No-op if same value
+        renderer.setFontFamily("Courier");
+        QCOMPARE(spy.count(), 1);
+    }
+
+    void testBackendProperty() {
+        TerminalRenderer renderer;
+        QSignalSpy spy(&renderer, &TerminalRenderer::backendChanged);
 
         TerminalBackend backend;
         renderer.setBackend(&backend);
         QCOMPARE(renderer.backend(), &backend);
-        QCOMPARE(backendSpy.count(), 1);
+        QCOMPARE(spy.count(), 1);
+
+        // No-op
+        renderer.setBackend(&backend);
+        QCOMPARE(spy.count(), 1);
+
+        // Clear
+        renderer.setBackend(nullptr);
+        QVERIFY(renderer.backend() == nullptr);
+        QCOMPARE(spy.count(), 2);
     }
 
-    void testMetrics() {
+    void testFontSizeClamped() {
         TerminalRenderer renderer;
-        QSignalSpy metricsSpy(&renderer, &TerminalRenderer::cellMetricsChanged);
+        QSignalSpy spy(&renderer, &TerminalRenderer::fontSizeChanged);
 
-        // Accessing properties should trigger updateCellMetrics if dirty
-        qreal w = renderer.cellWidth();
-        qreal h = renderer.cellHeight();
-        
-        // Initial metrics are calculated upon first access or update
-        QVERIFY(w > 0);
-        QVERIFY(h > 0);
-        QCOMPARE(metricsSpy.count(), 1);
+        renderer.setFontSize(0);           // invalid
+        QCOMPARE(spy.count(), 0);          // should be rejected
+        QCOMPARE(renderer.fontSize(), 14); // unchanged from default
 
-        renderer.setFontSize(24);
-        QVERIFY(renderer.cellHeight() > h);
-        QCOMPARE(metricsSpy.count(), 2);
+        renderer.setFontSize(-5); // invalid
+        QCOMPARE(spy.count(), 0);
     }
 };
 
