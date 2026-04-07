@@ -1,10 +1,9 @@
 #include "TerminalRenderer.h"
+#include "TerminalMaterial.h"
 #include <QFontMetricsF>
 #include <QPainter>
-#include <QPainterPath>
 #include <QQuickWindow>
 #include <QSGGeometryNode>
-#include <QSGTextureMaterial>
 #include <cmath>
 #include <vterm.h>
 
@@ -77,15 +76,12 @@ void TerminalRenderer::recalcMetrics() {
 
 // ── Glyph atlas ──────────────────────────────────────────────────────────────
 // Layout: 16-column grid of cells covering ASCII 32..126 (95 glyphs).
-// Atlas dimensions are small and always valid (16×6 cells ≈ ~150×100 px).
 
 void TerminalRenderer::rebuildAtlas() {
     if (!m_atlasDirty && !m_uvCache.isEmpty())
         return;
 
     QFont font(m_fontFamily, m_fontSize);
-    m_rawFont = QRawFont::fromFont(font);
-    m_uvCache.clear();
 
     constexpr int kFirst = 32;
     constexpr int kLast = 126;
@@ -106,6 +102,8 @@ void TerminalRenderer::rebuildAtlas() {
     painter.setPen(Qt::white);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
+    m_uvCache.clear();
+
     for (int i = 0; i < kCount; ++i) {
         uint32_t cp = kFirst + i;
         int col = i % kCols;
@@ -125,9 +123,18 @@ void TerminalRenderer::rebuildAtlas() {
 
     painter.end();
     m_spaceUV = m_uvCache.value(' ');
-
-    // Texture will be created/updated in updatePaintNode (needs window context)
     m_atlasDirty = false;
+}
+
+// ── Color helpers ────────────────────────────────────────────────────────────
+
+static void vtermColorToFloat(const VTermScreen *screen, VTermColor col, float &r, float &g,
+                              float &b) {
+    if (VTERM_COLOR_IS_INDEXED(&col))
+        vterm_screen_convert_color_to_rgb(screen, &col);
+    r = col.rgb.red / 255.0F;
+    g = col.rgb.green / 255.0F;
+    b = col.rgb.blue / 255.0F;
 }
 
 // ── Scene graph ──────────────────────────────────────────────────────────────
@@ -156,17 +163,15 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
         node->setFlag(QSGNode::OwnsGeometry);
         node->setFlag(QSGNode::OwnsMaterial);
 
-        auto *geom = new QSGGeometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), vertexCount);
+        auto *geom = new QSGGeometry(terminalAttributeSet(), vertexCount);
         geom->setDrawingMode(QSGGeometry::DrawTriangles);
         node->setGeometry(geom);
 
-        auto *mat = new QSGTextureMaterial;
+        auto *mat = new TerminalMaterial;
         mat->setTexture(m_atlasTexture);
-        mat->setFiltering(QSGTexture::Linear);
         node->setMaterial(mat);
     } else {
-        // Update material texture pointer (atlas may have been rebuilt)
-        auto *mat = static_cast<QSGTextureMaterial *>(node->material());
+        auto *mat = static_cast<TerminalMaterial *>(node->material());
         mat->setTexture(m_atlasTexture);
     }
 
@@ -174,15 +179,15 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     if (geom->vertexCount() != vertexCount)
         geom->allocate(vertexCount);
 
-    auto *v = geom->vertexDataAsTexturedPoint2D();
+    auto *verts = static_cast<TerminalVertex *>(geom->vertexData());
+    VTermScreen *screen = m_backend->screen();
 
-    // Read cells directly from libvterm — avoids QString allocation per row
     int vi = 0;
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
             VTermPos pos = {r, c};
             VTermScreenCell cell;
-            vterm_screen_get_cell(m_backend->screen(), pos, &cell);
+            vterm_screen_get_cell(screen, pos, &cell);
 
             uint32_t cp = cell.chars[0];
             if (cp < 32 || cp > 126)
@@ -190,21 +195,24 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
 
             const GlyphUV &uv = m_uvCache.value(cp, m_spaceUV);
 
+            float fgR, fgG, fgB, bgR, bgG, bgB;
+            vtermColorToFloat(screen, cell.fg, fgR, fgG, fgB);
+            vtermColorToFloat(screen, cell.bg, bgR, bgG, bgB);
+
             float x1 = static_cast<float>(c * m_cellWidth);
             float y1 = static_cast<float>(r * m_cellHeight);
             float x2 = static_cast<float>((c + 1) * m_cellWidth);
             float y2 = static_cast<float>((r + 1) * m_cellHeight);
 
-            // Two triangles (CCW winding)
-            v[vi++].set(x1, y1, uv.u1, uv.v1);
-            v[vi++].set(x1, y2, uv.u1, uv.v2);
-            v[vi++].set(x2, y1, uv.u2, uv.v1);
+            // Two triangles per cell
+            verts[vi++].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
+            verts[vi++].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
+            verts[vi++].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
 
-            v[vi++].set(x2, y1, uv.u2, uv.v1);
-            v[vi++].set(x1, y2, uv.u1, uv.v2);
-            v[vi++].set(x2, y2, uv.u2, uv.v2);
+            verts[vi++].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
+            verts[vi++].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
+            verts[vi++].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
 
-            // Skip continuation cells for wide characters
             if (cell.width > 1)
                 c += cell.width - 1;
         }

@@ -1,4 +1,5 @@
 #include "TerminalBackend.h"
+#include "TerminalMaterial.h"
 #include "TerminalRenderer.h"
 #include <QSignalSpy>
 #include <QTest>
@@ -13,7 +14,7 @@ private slots:
 
         QVERIFY(renderer.cellWidth() > 0);
         QVERIFY(renderer.cellHeight() > 0);
-        QVERIFY(renderer.cellHeight() > renderer.cellWidth()); // monospace cells are taller
+        QVERIFY(renderer.cellHeight() > renderer.cellWidth());
     }
 
     void testFontSizeAffectsMetrics() {
@@ -36,7 +37,6 @@ private slots:
         QCOMPARE(renderer.fontFamily(), QString("Courier"));
         QCOMPARE(spy.count(), 1);
 
-        // No-op if same value
         renderer.setFontFamily("Courier");
         QCOMPARE(spy.count(), 1);
     }
@@ -50,11 +50,9 @@ private slots:
         QCOMPARE(renderer.backend(), &backend);
         QCOMPARE(spy.count(), 1);
 
-        // No-op
         renderer.setBackend(&backend);
         QCOMPARE(spy.count(), 1);
 
-        // Clear
         renderer.setBackend(nullptr);
         QVERIFY(renderer.backend() == nullptr);
         QCOMPARE(spy.count(), 2);
@@ -64,12 +62,36 @@ private slots:
         TerminalRenderer renderer;
         QSignalSpy spy(&renderer, &TerminalRenderer::fontSizeChanged);
 
-        renderer.setFontSize(0);           // invalid
-        QCOMPARE(spy.count(), 0);          // should be rejected
-        QCOMPARE(renderer.fontSize(), 14); // unchanged from default
-
-        renderer.setFontSize(-5); // invalid
+        renderer.setFontSize(0);
         QCOMPARE(spy.count(), 0);
+        QCOMPARE(renderer.fontSize(), 14);
+
+        renderer.setFontSize(-5);
+        QCOMPARE(spy.count(), 0);
+    }
+
+    void testVertexLayout() {
+        const auto &attrs = terminalAttributeSet();
+        QCOMPARE(attrs.stride, static_cast<int>(sizeof(TerminalVertex)));
+        QCOMPARE(attrs.count, 4); // pos, texCoord, fgColor, bgColor
+    }
+
+    void testVertexSet() {
+        TerminalVertex v;
+        v.set(10, 20, 0.5F, 0.5F, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F);
+        QCOMPARE(v.x, 10.0F);
+        QCOMPARE(v.y, 20.0F);
+        QCOMPARE(v.u, 0.5F);
+        QCOMPARE(v.v, 0.5F);
+        QCOMPARE(v.fgR, 1.0F);
+        QCOMPARE(v.bgR, 0.0F);
+        QCOMPARE(v.bgA, 1.0F);
+    }
+
+    void testMaterialType() {
+        TerminalMaterial mat1;
+        TerminalMaterial mat2;
+        QCOMPARE(mat1.type(), mat2.type());
     }
 };
 
