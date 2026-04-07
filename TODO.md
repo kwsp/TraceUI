@@ -87,12 +87,14 @@ Refactor the entire UI into the high-density HUD layout (System vs Network colum
     - [ ] Implement ring buffer in `TerminalBackend` using `sb_pushline` / `sb_popline` callbacks.
 - [ ] **Alt-Screen Support**:
     - [ ] Handle alternate screen buffer transitions for TUI apps (vim/top).
-- [ ] **Native GPU Rendering (RHI)**:
-    - [ ] **Terminal Renderer Component**: Create `TerminalRenderer` as a `QQuickItem` subclass.
-    - [ ] **Glyph Atlas**: Implement a texture atlas for monospace glyphs (pre-rendered via `QRawFont` or `FreeType`).
-    - [ ] **Grid Geometry**: Use `QSGGeometryNode` to manage a grid of textured quads.
-    - [ ] **Cell Data Buffer**: Map `libvterm` screen state directly to a GPU vertex buffer (Cell attributes: UVs, FG/BG colors).
-    - [ ] **RHI Shaders**: Implement vertex/fragment shaders for high-performance cell compositing (bypass QML RichText).
+- [x] **Native GPU Rendering (RHI)**:
+    - [x] **Terminal Renderer Component**: Create `TerminalRenderer` as a `QQuickItem` subclass.
+    - [x] **Glyph Atlas**: Implement a texture atlas for monospace glyphs covering ASCII, Latin-1, Box Drawing, Block Elements, etc.
+    - [x] **Grid Geometry**: Use `QSGGeometryNode` with a two-node setup (Background color layer + Textured glyph layer).
+    - [x] **Cell Data Buffer**: Map `libvterm` screen state directly to GPU vertex attributes (UVs, FG colors).
+    - [x] **RHI Shaders**: Implement vertex/fragment shaders for high-performance glyph tinting and rendering.
+    - [x] **Retina Support**: Scale the atlas using `devicePixelRatio` for high-DPI crispness.
+    - [ ] **Emoji Support**: Render full-color emojis (currently unsupported, requires a separate color-atlas or shader branch that bypasses color-tinting for emoji codepoints).
 - [ ] Windows ConPTY support.
 
 ## Phase 4: Real Backend Data
