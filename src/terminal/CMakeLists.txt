@@ -11,8 +11,6 @@ qt6_add_qml_module(TraceUITerminal
         TerminalModel.cpp
         TerminalRenderer.h
         TerminalRenderer.cpp
-        TerminalMaterial.h
-        TerminalMaterial.cpp
         FileDescriptor.h
         FileDescriptor.cpp
 )
@@ -20,19 +18,6 @@ qt6_add_qml_module(TraceUITerminal
 target_include_directories(TraceUITerminal PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
-)
-
-find_package(Qt6 REQUIRED COMPONENTS ShaderTools)
-
-qt6_add_shaders(TraceUITerminal "terminal_shaders"
-    BATCHABLE
-    PRECOMPILE
-    OPTIMIZED
-    PREFIX
-        "/terminal"
-    FILES
-        shaders/terminal.vert
-        shaders/terminal.frag
 )
 
 target_link_libraries(TraceUITerminal PUBLIC

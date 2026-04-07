@@ -1,5 +1,4 @@
 #include "TerminalBackend.h"
-#include "TerminalMaterial.h"
 #include "TerminalRenderer.h"
 #include <QSignalSpy>
 #include <QTest>
@@ -70,28 +69,12 @@ private slots:
         QCOMPARE(spy.count(), 0);
     }
 
-    void testVertexLayout() {
-        const auto &attrs = terminalAttributeSet();
-        QCOMPARE(attrs.stride, static_cast<int>(sizeof(TerminalVertex)));
-        QCOMPARE(attrs.count, 4); // pos, texCoord, fgColor, bgColor
-    }
-
-    void testVertexSet() {
-        TerminalVertex v;
-        v.set(10, 20, 0.5F, 0.5F, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F);
-        QCOMPARE(v.x, 10.0F);
-        QCOMPARE(v.y, 20.0F);
-        QCOMPARE(v.u, 0.5F);
-        QCOMPARE(v.v, 0.5F);
-        QCOMPARE(v.fgR, 1.0F);
-        QCOMPARE(v.bgR, 0.0F);
-        QCOMPARE(v.bgA, 1.0F);
-    }
-
-    void testMaterialType() {
-        TerminalMaterial mat1;
-        TerminalMaterial mat2;
-        QCOMPARE(mat1.type(), mat2.type());
+    void testCellMetricsAreIntegers() {
+        TerminalRenderer renderer;
+        renderer.ensureMetrics();
+        // Cell dimensions should be snapped to integers (std::ceil)
+        QCOMPARE(renderer.cellWidth(), std::ceil(renderer.cellWidth()));
+        QCOMPARE(renderer.cellHeight(), std::ceil(renderer.cellHeight()));
     }
 };
 

@@ -1,9 +1,10 @@
 #include "TerminalRenderer.h"
-#include "TerminalMaterial.h"
 #include <QFontMetricsF>
 #include <QPainter>
 #include <QQuickWindow>
 #include <QSGGeometryNode>
+#include <QSGTextureMaterial>
+#include <QSGVertexColorMaterial>
 #include <cmath>
 #include <vterm.h>
 
@@ -76,16 +77,15 @@ void TerminalRenderer::recalcMetrics() {
 }
 
 // ── Glyph atlas ──────────────────────────────────────────────────────────────
-// Layout: 16-column grid covering ASCII + box-drawing + block elements.
+// Layout: 32-column grid covering ASCII + box-drawing + block elements.
 
-// Codepoint ranges to include in the atlas.
 struct CodepointRange {
     uint32_t first, last;
 };
 
 static constexpr CodepointRange kAtlasRanges[] = {
     {0x0020, 0x007E}, // ASCII printable (95)
-    {0x00A0, 0x00FF}, // Latin-1 Supplement (96) — accented chars, ¡¢£ etc.
+    {0x00A0, 0x00FF}, // Latin-1 Supplement (96)
     {0x2500, 0x257F}, // Box Drawing (128)
     {0x2580, 0x259F}, // Block Elements (32)
     {0x2190, 0x21FF}, // Arrows (112)
@@ -152,8 +152,8 @@ void TerminalRenderer::rebuildAtlas() {
 
 // ── Color helpers ────────────────────────────────────────────────────────────
 
-static void vtermColorToFloat(const VTermScreen *screen, VTermColor col, float &r, float &g,
-                              float &b) {
+static void vtermColorToRGBA(const VTermScreen *screen, VTermColor col, float &r, float &g,
+                             float &b) {
     if (VTERM_COLOR_IS_INDEXED(&col))
         vterm_screen_convert_color_to_rgb(screen, &col);
     r = col.rgb.red / 255.0F;
@@ -162,6 +162,9 @@ static void vtermColorToFloat(const VTermScreen *screen, VTermColor col, float &
 }
 
 // ── Scene graph ──────────────────────────────────────────────────────────────
+// Two-layer rendering:
+//   1. Background node: colored quads for each cell's background
+//   2. Glyph node: textured quads (atlas) with QSGTextureMaterial (proven working)
 
 QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) {
     if (!m_backend || !window())
@@ -173,39 +176,70 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     if (!m_atlasTexture || m_atlasTexture->textureSize() != m_atlasImage.size()) {
         delete m_atlasTexture;
         m_atlasTexture =
-            window()->createTextureFromImage(m_atlasImage, QQuickWindow::TextureCanUseAtlas);
+            window()->createTextureFromImage(m_atlasImage, QQuickWindow::TextureHasAlphaChannel);
+        m_atlasTexture->setFiltering(QSGTexture::Nearest);
     }
 
     const int rows = m_backend->rows();
     const int cols = m_backend->cols();
     const int cellCount = rows * cols;
-    const int vertexCount = cellCount * 6; // 2 triangles per cell
+    const int vertexCount = cellCount * 6;
 
-    auto *node = static_cast<QSGGeometryNode *>(oldNode);
-    if (!node) {
-        node = new QSGGeometryNode;
-        node->setFlag(QSGNode::OwnsGeometry);
-        node->setFlag(QSGNode::OwnsMaterial);
+    // ── Root node (container) ────────────────────────────────────────────
+    // Structure: rootNode -> bgNode + glyphNode
+    QSGNode *rootNode = oldNode;
+    QSGGeometryNode *bgNode = nullptr;
+    QSGGeometryNode *glyphNode = nullptr;
 
-        auto *geom = new QSGGeometry(terminalAttributeSet(), vertexCount);
-        geom->setDrawingMode(QSGGeometry::DrawTriangles);
-        node->setGeometry(geom);
+    if (!rootNode) {
+        rootNode = new QSGNode;
 
-        auto *mat = new TerminalMaterial;
-        mat->setTexture(m_atlasTexture);
-        node->setMaterial(mat);
+        // Background layer
+        bgNode = new QSGGeometryNode;
+        bgNode->setFlag(QSGNode::OwnsGeometry);
+        bgNode->setFlag(QSGNode::OwnsMaterial);
+        auto *bgGeom =
+            new QSGGeometry(QSGGeometry::defaultAttributes_ColoredPoint2D(), vertexCount);
+        bgGeom->setDrawingMode(QSGGeometry::DrawTriangles);
+        bgNode->setGeometry(bgGeom);
+        auto *bgMat = new QSGVertexColorMaterial;
+        bgNode->setMaterial(bgMat);
+        rootNode->appendChildNode(bgNode);
+
+        // Glyph layer
+        glyphNode = new QSGGeometryNode;
+        glyphNode->setFlag(QSGNode::OwnsGeometry);
+        glyphNode->setFlag(QSGNode::OwnsMaterial);
+        auto *glyphGeom =
+            new QSGGeometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), vertexCount);
+        glyphGeom->setDrawingMode(QSGGeometry::DrawTriangles);
+        glyphNode->setGeometry(glyphGeom);
+        auto *glyphMat = new QSGTextureMaterial;
+        glyphMat->setTexture(m_atlasTexture);
+        glyphMat->setFiltering(QSGTexture::Nearest);
+        glyphNode->setMaterial(glyphMat);
+        rootNode->appendChildNode(glyphNode);
     } else {
-        auto *mat = static_cast<TerminalMaterial *>(node->material());
-        mat->setTexture(m_atlasTexture);
+        bgNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(0));
+        glyphNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(1));
+
+        auto *glyphMat = static_cast<QSGTextureMaterial *>(glyphNode->material());
+        glyphMat->setTexture(m_atlasTexture);
     }
 
-    auto *geom = node->geometry();
-    if (geom->vertexCount() != vertexCount)
-        geom->allocate(vertexCount);
+    // ── Resize geometry if needed ────────────────────────────────────────
+    auto *bgGeom = bgNode->geometry();
+    auto *glyphGeom = glyphNode->geometry();
+    if (bgGeom->vertexCount() != vertexCount)
+        bgGeom->allocate(vertexCount);
+    if (glyphGeom->vertexCount() != vertexCount)
+        glyphGeom->allocate(vertexCount);
 
-    auto *verts = static_cast<TerminalVertex *>(geom->vertexData());
+    auto *bgVerts = bgGeom->vertexDataAsColoredPoint2D();
+    auto *glyphVerts = glyphGeom->vertexDataAsTexturedPoint2D();
     VTermScreen *screen = m_backend->screen();
 
+    // ── Fill both layers ─────────────────────────────────────────────────
     int vi = 0;
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
@@ -213,35 +247,52 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             VTermScreenCell cell;
             vterm_screen_get_cell(screen, pos, &cell);
 
+            // Character
             uint32_t cp = cell.chars[0];
             if (cp == 0)
                 cp = ' ';
-
             const GlyphUV &uv = m_uvCache.value(cp, m_spaceUV);
 
+            // Colors
             float fgR, fgG, fgB, bgR, bgG, bgB;
-            vtermColorToFloat(screen, cell.fg, fgR, fgG, fgB);
-            vtermColorToFloat(screen, cell.bg, bgR, bgG, bgB);
+            vtermColorToRGBA(screen, cell.fg, fgR, fgG, fgB);
+            vtermColorToRGBA(screen, cell.bg, bgR, bgG, bgB);
 
+            // Cell rect
             float x1 = static_cast<float>(c * m_cellWidth);
             float y1 = static_cast<float>(r * m_cellHeight);
             float x2 = static_cast<float>((c + 1) * m_cellWidth);
             float y2 = static_cast<float>((r + 1) * m_cellHeight);
 
-            // Two triangles per cell
-            verts[vi++].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
-            verts[vi++].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
-            verts[vi++].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
+            // BG color as uchar RGBA
+            auto bgRi = static_cast<uchar>(bgR * 255);
+            auto bgGi = static_cast<uchar>(bgG * 255);
+            auto bgBi = static_cast<uchar>(bgB * 255);
 
-            verts[vi++].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
-            verts[vi++].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
-            verts[vi++].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1, bgR, bgG, bgB, 1);
+            // Background triangles (solid color)
+            bgVerts[vi + 0].set(x1, y1, bgRi, bgGi, bgBi, 255);
+            bgVerts[vi + 1].set(x1, y2, bgRi, bgGi, bgBi, 255);
+            bgVerts[vi + 2].set(x2, y1, bgRi, bgGi, bgBi, 255);
+            bgVerts[vi + 3].set(x2, y1, bgRi, bgGi, bgBi, 255);
+            bgVerts[vi + 4].set(x1, y2, bgRi, bgGi, bgBi, 255);
+            bgVerts[vi + 5].set(x2, y2, bgRi, bgGi, bgBi, 255);
+
+            // Glyph triangles (textured)
+            glyphVerts[vi + 0].set(x1, y1, uv.u1, uv.v1);
+            glyphVerts[vi + 1].set(x1, y2, uv.u1, uv.v2);
+            glyphVerts[vi + 2].set(x2, y1, uv.u2, uv.v1);
+            glyphVerts[vi + 3].set(x2, y1, uv.u2, uv.v1);
+            glyphVerts[vi + 4].set(x1, y2, uv.u1, uv.v2);
+            glyphVerts[vi + 5].set(x2, y2, uv.u2, uv.v2);
+
+            vi += 6;
 
             if (cell.width > 1)
                 c += cell.width - 1;
         }
     }
 
-    node->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
-    return node;
+    bgNode->markDirty(QSGNode::DirtyGeometry);
+    glyphNode->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
+    return rootNode;
 }
