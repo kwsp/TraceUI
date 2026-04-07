@@ -6,7 +6,6 @@
 #include <QRawFont>
 #include <QSGGeometryNode>
 #include <QSGTexture>
-#include <vector>
 
 class TerminalRenderer : public QQuickItem {
     Q_OBJECT
@@ -21,6 +20,11 @@ class TerminalRenderer : public QQuickItem {
 public:
     explicit TerminalRenderer(QQuickItem *parent = nullptr);
     ~TerminalRenderer() override;
+
+    TerminalRenderer(const TerminalRenderer &) = delete;
+    TerminalRenderer(TerminalRenderer &&) = delete;
+    TerminalRenderer &operator=(const TerminalRenderer &) = delete;
+    TerminalRenderer &operator=(TerminalRenderer &&) = delete;
 
     TerminalBackend *backend() const { return m_backend; }
     void setBackend(TerminalBackend *backend);
@@ -52,12 +56,12 @@ private:
     void recalcMetrics();
 
     // ── Font / Atlas ─────────────────────────────────────────────────────────
-    QString m_fontFamily = "Hack";
-    int m_fontSize = 14;
-    qreal m_cellWidth = 0;
-    qreal m_cellHeight = 0;
-    qreal m_ascent = 0;
-    bool m_atlasDirty = true;
+    QString m_fontFamily{"Hack"};
+    int m_fontSize{14};
+    qreal m_cellWidth{};
+    qreal m_cellHeight{};
+    qreal m_ascent{};
+    bool m_atlasDirty{true};
 
     QRawFont m_rawFont;
 
@@ -68,9 +72,9 @@ private:
     QHash<uint32_t, GlyphUV> m_uvCache; // codepoint → UV
     GlyphUV m_spaceUV{};                // fallback for missing glyphs
 
-    QImage m_atlasImage;                  // kept for re-upload
-    QSGTexture *m_atlasTexture = nullptr; // owned by scene graph
+    QImage m_atlasImage;          // kept for re-upload
+    QSGTexture *m_atlasTexture{}; // owned by scene graph
 
     // ── Backend ──────────────────────────────────────────────────────────────
-    TerminalBackend *m_backend = nullptr;
+    TerminalBackend *m_backend{};
 };

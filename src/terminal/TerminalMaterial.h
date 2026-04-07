@@ -49,7 +49,7 @@ public:
     void setTexture(QSGTexture *tex) { m_texture = tex; }
 
 private:
-    QSGTexture *m_texture = nullptr;
+    QSGTexture *m_texture{};
 };
 
 QSGGeometry::AttributeSet &terminalAttributeSet();

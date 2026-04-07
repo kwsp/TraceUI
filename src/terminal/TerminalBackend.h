@@ -35,7 +35,9 @@ public:
 
     // Non-copyable, non-movable (QObject + OS resources)
     TerminalBackend(const TerminalBackend &) = delete;
+    TerminalBackend(TerminalBackend &&) = delete;
     TerminalBackend &operator=(const TerminalBackend &) = delete;
+    TerminalBackend &operator=(TerminalBackend &&) = delete;
 
     [[nodiscard]] int rows() const { return m_rows; }
     [[nodiscard]] int cols() const { return m_cols; }
@@ -73,18 +75,18 @@ private:
     void resizePty();
     void cleanupChild();
 
-    int m_rows = 24;
-    int m_cols = 80;
-    int m_cursorRow = 0;
-    int m_cursorCol = 0;
+    int m_rows{24};
+    int m_cols{80};
+    int m_cursorRow{};
+    int m_cursorCol{};
 
-    int m_dirtyStartRow = -1;
-    int m_dirtyEndRow = -1;
+    int m_dirtyStartRow{-1};
+    int m_dirtyEndRow{-1};
     QTimer m_renderTimer;
 
     FileDescriptor m_masterFd;
-    pid_t m_childPid = -1;
-    QSocketNotifier *m_notifier = nullptr;
+    pid_t m_childPid{-1};
+    QSocketNotifier *m_notifier{};
 
     VTermPtr m_vt;
     VTermScreen *m_vts = nullptr; // Owned by m_vt, not freed separately

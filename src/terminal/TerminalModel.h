@@ -32,5 +32,5 @@ private slots:
     void onScreenDamaged(int startRow, int endRow);
 
 private:
-    TerminalBackend *m_backend = nullptr;
+    TerminalBackend *m_backend{};
 };
