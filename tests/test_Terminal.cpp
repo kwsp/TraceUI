@@ -1,5 +1,4 @@
 #include "TerminalBackend.h"
-#include "TerminalModel.h"
 #include <QtTest>
 
 class TerminalTest : public QObject {
@@ -47,50 +46,6 @@ private slots:
         QVERIFY(backend.getLineText(-1).isEmpty());
         QVERIFY(backend.getLineText(24).isEmpty());
         QVERIFY(backend.getLineText(999).isEmpty());
-    }
-
-    void testModelIntegration() {
-        TerminalBackend backend;
-        TerminalModel model;
-        model.setBackend(&backend);
-
-        QCOMPARE(model.rowCount(), 24);
-
-        backend.resize(10, 80);
-        QCOMPARE(model.rowCount(), 10);
-    }
-
-    void testModelFlatList() {
-        TerminalModel model;
-        // With parent index, should return 0 (flat list)
-        QCOMPARE(model.rowCount(QModelIndex()), 0);
-    }
-
-    void testModelDataChanged() {
-        TerminalBackend backend;
-        TerminalModel model;
-        model.setBackend(&backend);
-
-        QSignalSpy spy(&model, &TerminalModel::dataChanged);
-        emit backend.screenDamaged(0, 5);
-        QCOMPARE(spy.count(), 1);
-    }
-
-    void testModelSetBackendDisconnects() {
-        TerminalBackend backend1;
-        TerminalBackend backend2;
-        TerminalModel model;
-
-        model.setBackend(&backend1);
-        model.setBackend(&backend2);
-
-        // Signals from old backend should not trigger updates
-        QSignalSpy spy(&model, &TerminalModel::dataChanged);
-        emit backend1.screenDamaged(0, 5);
-        QCOMPARE(spy.count(), 0);
-
-        emit backend2.screenDamaged(0, 5);
-        QCOMPARE(spy.count(), 1);
     }
 
     void testCursorPosition() {

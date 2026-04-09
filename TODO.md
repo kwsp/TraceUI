@@ -2,7 +2,6 @@
 
 ## Phase 1: Terminal Support (Complete)
 - [x] PTY Backend (macOS/Linux) and `libvterm` integration.
-- [x] `TerminalModel` with RichText xterm-256color support.
 - [x] `TraceUITerminal` standalone QML module.
 - [x] Tiling layout with persistent SplitView state.
 

@@ -7,8 +7,6 @@ qt6_add_qml_module(TraceUITerminal
     SOURCES
         TerminalBackend.h
         TerminalBackend.cpp
-        TerminalModel.h
-        TerminalModel.cpp
         TerminalRenderer.h
         TerminalRenderer.cpp
         GlyphMaterial.h
