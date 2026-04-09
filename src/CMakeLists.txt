@@ -5,14 +5,16 @@ qt_add_executable(${PROJECT_NAME}
   main.cpp
 )
 
-set_source_files_properties(Style.qml       PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
-set_source_files_properties(LayoutStore.qml  PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
-set_source_files_properties(AnimConfig.qml   PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
-
-set(TRACEUI_QML_FILES
+set(TRACEUI_QML_SINGLETONS
   Style.qml
   LayoutStore.qml
   AnimConfig.qml
+)
+set_source_files_properties(${TRACEUI_QML_SINGLETONS}
+  PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
+set(TRACEUI_QML_FILES
+  ${TRACEUI_QML_SINGLETONS}
   TurnOnReveal.qml
   TerminalContainer.qml
   Main.qml
@@ -25,8 +27,6 @@ set(TRACEUI_QML_FILES
   PanelFrame.qml
   SectionBracket.qml
 )
-
-# TRACEUI_QML_FILES already defined above
 
 qt_add_qml_module(${PROJECT_NAME}
   URI ${PROJECT_NAME}
