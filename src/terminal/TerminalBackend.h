@@ -54,9 +54,6 @@ public:
     Q_INVOKABLE void sendInput(const QString &input);
     Q_INVOKABLE void start(const QString &shell = QString());
 
-    [[nodiscard]] QString getLineText(int row) const;
-    [[nodiscard]] QString getLineHtml(int row) const;
-
     /// Direct access for GPU renderer (avoids per-row QString allocation).
     [[nodiscard]] VTermScreen *screen() const { return m_vts; }
 
