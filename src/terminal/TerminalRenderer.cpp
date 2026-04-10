@@ -6,6 +6,7 @@
 #include <QSGGeometryNode>
 #include <QSGVertexColorMaterial>
 #include <cmath>
+#include <span>
 #include <vterm.h>
 
 // NOLINTBEGIN(*-isolate-declaration)
@@ -229,7 +230,8 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     const int rows = m_backend->rows();
     const int cols = m_backend->cols();
     const int cellCount = rows * cols;
-    const int vertexCount = cellCount * 6;
+    constexpr int kVerticesPerCell = 6; // 2 triangles per cell
+    const int vertexCount = cellCount * kVerticesPerCell;
 
     // ── Root node (container) ────────────────────────────────────────────
     // Structure: rootNode -> bgNode + glyphNode
@@ -289,6 +291,10 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
 
     auto *bgVerts = bgGeom->vertexDataAsColoredPoint2D();
     auto *glyphVerts = static_cast<GlyphVertex *>(glyphGeom->vertexData());
+
+    std::span<QSGGeometry::ColoredPoint2D> bgVertSpan(bgVerts, vertexCount);
+    std::span<GlyphVertex> glyphVertSpan(glyphVerts, vertexCount);
+
     const VTermScreen *screen = m_backend->screen();
 
     // ── Fill both layers ─────────────────────────────────────────────────
@@ -322,23 +328,23 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             // BG color as uchar RGBA
 
             // Background triangles (solid color)
-            bgVerts[vi + 0].set(x1, y1, bgR, bgG, bgB, bgA);
-            bgVerts[vi + 1].set(x1, y2, bgR, bgG, bgB, bgA);
-            bgVerts[vi + 2].set(x2, y1, bgR, bgG, bgB, bgA);
-            bgVerts[vi + 3].set(x2, y1, bgR, bgG, bgB, bgA);
-            bgVerts[vi + 4].set(x1, y2, bgR, bgG, bgB, bgA);
-            bgVerts[vi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
+            bgVertSpan[vi + 0].set(x1, y1, bgR, bgG, bgB, bgA);
+            bgVertSpan[vi + 1].set(x1, y2, bgR, bgG, bgB, bgA);
+            bgVertSpan[vi + 2].set(x2, y1, bgR, bgG, bgB, bgA);
+            bgVertSpan[vi + 3].set(x2, y1, bgR, bgG, bgB, bgA);
+            bgVertSpan[vi + 4].set(x1, y2, bgR, bgG, bgB, bgA);
+            bgVertSpan[vi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
 
             // Glyph triangles (textured + colored)
-            glyphVerts[vi + 0].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1.0F);
-            glyphVerts[vi + 1].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
-            glyphVerts[vi + 2].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
-            glyphVerts[vi + 3].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
-            glyphVerts[vi + 4].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
-            glyphVerts[vi + 5].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1.0F);
+            glyphVertSpan[vi + 0].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1.0F);
+            glyphVertSpan[vi + 1].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
+            glyphVertSpan[vi + 2].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
+            glyphVertSpan[vi + 3].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
+            glyphVertSpan[vi + 4].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
+            glyphVertSpan[vi + 5].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1.0F);
 
             // NOLINTEND(*-magic-numbers)
-            vi += 6;
+            vi += kVerticesPerCell;
 
             if (cell.width > 1)
                 c += cell.width - 1;
