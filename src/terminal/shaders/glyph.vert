@@ -14,6 +14,6 @@ layout(std140, binding = 0) uniform buf {
 
 void main() {
     vTexCoord = texcoord;
-    vColor = color;
+    vColor = vec4(color.rgb, color.a * qt_Opacity);
     gl_Position = qt_Matrix * vec4(pos, 0.0, 1.0);
 }
