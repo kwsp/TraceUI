@@ -82,7 +82,7 @@ void TerminalRenderer::recalcMetrics() {
 // Layout: 32-column grid covering ASCII + box-drawing + block elements.
 
 struct CodepointRange {
-    uint32_t first, last;
+    char32_t first, last;
 };
 
 // NOLINTBEGIN(*-designated-initializers)
@@ -141,7 +141,7 @@ void TerminalRenderer::rebuildAtlas() {
 
     int idx = 0;
     for (const auto &range : kAtlasRanges) {
-        for (uint32_t cp = range.first; cp <= range.last; ++cp, ++idx) {
+        for (char32_t cp = range.first; cp <= range.last; ++cp, ++idx) {
             const int col = idx % kCols;
             const int row = idx / kCols;
 
@@ -150,7 +150,7 @@ void TerminalRenderer::rebuildAtlas() {
 
             // Draw text inside the margin
             painter.drawText(QPointF(logicalX + margin, logicalY + margin + m_ascent),
-                             QString::fromUcs4(&cp, 1));
+                             QString(QChar(cp)));
 
             const qreal u1 = logicalX + margin;
             const qreal v1 = logicalY + margin;
