@@ -23,6 +23,11 @@ public:
     GlyphMaterial();
     ~GlyphMaterial() override = default;
 
+    GlyphMaterial(const GlyphMaterial &) = delete;
+    GlyphMaterial(GlyphMaterial &&) = delete;
+    GlyphMaterial &operator=(const GlyphMaterial &) = delete;
+    GlyphMaterial &operator=(GlyphMaterial &&) = delete;
+
     QSGMaterialType *type() const override;
     QSGMaterialShader *createShader(QSGRendererInterface::RenderMode mode) const override;
     int compare(const QSGMaterial *other) const override;
