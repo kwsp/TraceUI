@@ -5,6 +5,8 @@
 #include <cmath>
 
 bool isEmoji(uint32_t cp) {
+    if (cp >= 0xE000  && cp <= 0xF8FF)  return false; // Basic PUA (Nerd Font icons)
+    if (cp >= 0xF0000 && cp <= 0xFFFFF) return false; // Supplementary PUA-A (Nerd Fonts v3)
     return (cp >= 0x1F000)
         || (cp >= 0x2600 && cp <= 0x27BF)
         || (cp >= 0x2300 && cp <= 0x23FF);

@@ -95,6 +95,9 @@ static constexpr CodepointRange kAtlasRanges[] = {
     {0x2190, 0x21FF}, // Arrows (112)
     {0x25A0, 0x25FF}, // Geometric Shapes (96)
     // {0x2600, 0x26FF} removed — handled by emoji atlas
+    {0xE000, 0xE4FF}, // Nerd Font: Seti-UI, Devicons
+    {0xEA60, 0xEBFF}, // Nerd Font: Codicons
+    {0xF000, 0xF5FF}, // Nerd Font: Font Awesome
 };
 // NOLINTEND(*-designated-initializers)
 
@@ -312,22 +315,21 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
         bgGeom->allocate(vertexCount);
     // Pre-allocate to upper bound; trimmed after the cell loop
     glyphGeom->allocate(vertexCount);
-    emojiGeom->allocate(vertexCount);
+    // Emoji vertices are collected into a staging vector (allocate() zeros
+    // its buffer, so we cannot write then trim in-place).
+    QVarLengthArray<GlyphVertex, 256> emojiStagingBuf;
 
     auto *bgVerts    = bgGeom->vertexDataAsColoredPoint2D();
     auto *glyphVerts = static_cast<GlyphVertex *>(glyphGeom->vertexData());
-    auto *emojiVerts = static_cast<GlyphVertex *>(emojiGeom->vertexData());
 
     std::span<QSGGeometry::ColoredPoint2D> bgVertSpan(bgVerts, vertexCount);
     std::span<GlyphVertex> glyphVertSpan(glyphVerts, vertexCount);
-    std::span<GlyphVertex> emojiVertSpan(emojiVerts, vertexCount);
 
     const VTermScreen *screen = m_backend->screen();
 
     // ── Fill all layers ──────────────────────────────────────────────────
     int bvi = 0; // background vertex index
     int tvi = 0; // text vertex index
-    int evi = 0; // emoji vertex index
     const uint8_t bgA = 255;
 
     for (int r = 0; r < rows; ++r) {
@@ -358,17 +360,21 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             bgVertSpan[bvi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
             bvi += kVerticesPerCell;
 
-            if (cp != 0 && isEmoji(cp) && m_emojiAtlas.ensureGlyph(cp)) {
-                const GlyphUV uv = m_emojiAtlas.uv(cp);
-                // 2-wide quad
+            if (cp != 0 && isEmoji(cp))
+                m_emojiAtlas.ensureGlyph(cp); // no-op on cache hit; sets dirty on first insert
+            const GlyphUV emojiUV = (cp != 0 && isEmoji(cp)) ? m_emojiAtlas.uv(cp) : GlyphUV{};
+            if (emojiUV.u2 > 0.0F) { // u2==0 means not in atlas (full or PUA fallback)
+                const GlyphUV &uv = emojiUV;
+                // 2-wide quad pushed into staging buffer
                 const auto ex2 = static_cast<float>(x1 + 2.0F * m_cellWidth);
-                emojiVertSpan[evi + 0].set(x1,  y1, uv.u1, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                emojiVertSpan[evi + 1].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
-                emojiVertSpan[evi + 2].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                emojiVertSpan[evi + 3].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                emojiVertSpan[evi + 4].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
-                emojiVertSpan[evi + 5].set(ex2, y2, uv.u2, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
-                evi += kVerticesPerCell;
+                GlyphVertex v[kVerticesPerCell];
+                v[0].set(x1,  y1, uv.u1, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[1].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[2].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[3].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[4].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[5].set(ex2, y2, uv.u2, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                emojiStagingBuf.append(v, kVerticesPerCell);
             } else {
                 const uint32_t renderCp = (cp == 0) ? ' ' : cp;
                 const GlyphUV &uv = m_uvCache.value(renderCp, m_spaceUV);
@@ -387,9 +393,12 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
         }
     }
 
-    // Trim geometry to actual vertex counts used
+    // Trim glyph geometry; upload emoji from staging buffer
     glyphGeom->allocate(tvi);
+    const int evi = emojiStagingBuf.size();
     emojiGeom->allocate(evi);
+    if (evi > 0)
+        memcpy(emojiGeom->vertexData(), emojiStagingBuf.data(), evi * sizeof(GlyphVertex));
 
     // Re-upload emoji texture if atlas changed
     if (m_emojiAtlas.isDirty() || m_emojiTexture == nullptr) {

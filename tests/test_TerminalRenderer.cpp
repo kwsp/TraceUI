@@ -115,6 +115,15 @@ private slots:
         QVERIFY(!isEmoji(0x00FF));  // Latin-1
     }
 
+    void isEmojiRejectsPUA() {
+        QVERIFY(!isEmoji(0xE000));  // Basic PUA start
+        QVERIFY(!isEmoji(0xE348));  // Nerd Font Seti-UI
+        QVERIFY(!isEmoji(0xF8FF));  // Basic PUA end
+        QVERIFY(!isEmoji(0xF0000)); // SPUA-A start
+        QVERIFY(!isEmoji(0xF04B2)); // Nerd Fonts v3 icon
+        QVERIFY(!isEmoji(0xFFFFF)); // SPUA-A end
+    }
+
     void ensureGlyphReturnsTrueOnMiss() {
         EmojiAtlas atlas;
         atlas.setCellSize(8.0, 16.0, 1.0);
