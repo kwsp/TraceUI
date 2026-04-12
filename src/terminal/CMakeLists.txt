@@ -13,6 +13,8 @@ qt6_add_qml_module(TraceUITerminal
         GlyphMaterial.cpp
         EmojiMaterial.h
         EmojiMaterial.cpp
+        EmojiAtlas.h
+        EmojiAtlas.cpp
         FileDescriptor.h
         FileDescriptor.cpp
 )

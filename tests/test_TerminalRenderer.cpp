@@ -1,3 +1,4 @@
+#include "EmojiAtlas.h"
 #include "EmojiMaterial.h"
 #include "GlyphMaterial.h"
 #include "TerminalBackend.h"
@@ -96,6 +97,89 @@ private slots:
     }
 };
 
+class TestEmojiAtlas : public QObject {
+    Q_OBJECT
+private slots:
+    void isEmojiDetectsMainBlocks() {
+        QVERIFY(isEmoji(0x1F600));  // 😀 grinning face
+        QVERIFY(isEmoji(0x1F525));  // 🔥 fire
+        QVERIFY(isEmoji(0x2614));   // ☔ umbrella with rain (misc symbols)
+        QVERIFY(isEmoji(0x23F0));   // ⏰ alarm clock (misc technical)
+    }
+
+    void isEmojiRejectsTextGlyphs() {
+        QVERIFY(!isEmoji(0x0000));  // null
+        QVERIFY(!isEmoji(0x0041));  // 'A'
+        QVERIFY(!isEmoji(0x2500));  // box drawing ─
+        QVERIFY(!isEmoji(0x2580));  // block element ▀
+        QVERIFY(!isEmoji(0x00FF));  // Latin-1
+    }
+
+    void ensureGlyphReturnsTrueOnMiss() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        QVERIFY(atlas.ensureGlyph(0x1F600) == true);
+    }
+
+    void ensureGlyphReturnsFalseOnHit() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.ensureGlyph(0x1F600);
+        QVERIFY(atlas.ensureGlyph(0x1F600) == false);
+    }
+
+    void isDirtyAfterEnsureGlyph() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.markClean();
+        atlas.ensureGlyph(0x1F600);
+        QVERIFY(atlas.isDirty());
+    }
+
+    void markCleanClearsDirtyFlag() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.ensureGlyph(0x1F600);
+        atlas.markClean();
+        QVERIFY(!atlas.isDirty());
+    }
+
+    void uvHasValidCoordinatesAfterEnsure() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.ensureGlyph(0x1F600);
+        GlyphUV uv = atlas.uv(0x1F600);
+        QVERIFY(uv.u1 >= 0.0F && uv.u1 < uv.u2);
+        QVERIFY(uv.v1 >= 0.0F && uv.v1 < uv.v2);
+        QVERIFY(uv.u2 <= 1.0F);
+        QVERIFY(uv.v2 <= 1.0F);
+    }
+
+    void setCellSizeInvalidatesCacheWhenDimensionsChange() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.ensureGlyph(0x1F600);
+        atlas.markClean();
+        // Different cell size — should reset
+        atlas.setCellSize(10.0, 20.0, 1.0);
+        QVERIFY(atlas.isDirty());
+        // Cache cleared — ensureGlyph should return true again
+        QVERIFY(atlas.ensureGlyph(0x1F600) == true);
+    }
+
+    void setCellSizeIsNoopWhenDimensionsUnchanged() {
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.ensureGlyph(0x1F600);
+        atlas.markClean();
+        // Same dimensions — no-op
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        QVERIFY(!atlas.isDirty());
+        // Cache intact
+        QVERIFY(atlas.ensureGlyph(0x1F600) == false);
+    }
+};
+
 // Run multiple test objects in one binary
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -106,6 +190,7 @@ int main(int argc, char *argv[]) {
     };
     runTest(new TestTerminalRenderer);
     runTest(new TestEmojiMaterial);
+    runTest(new TestEmojiAtlas);
     return status;
 }
 
