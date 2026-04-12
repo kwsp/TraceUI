@@ -1,5 +1,8 @@
+#include "EmojiMaterial.h"
+#include "GlyphMaterial.h"
 #include "TerminalBackend.h"
 #include "TerminalRenderer.h"
+#include <QGuiApplication>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -78,5 +81,32 @@ private slots:
     }
 };
 
-QTEST_MAIN(TestTerminalRenderer)
+class TestEmojiMaterial : public QObject {
+    Q_OBJECT
+private slots:
+    void typeIsDifferentFromGlyphMaterial() {
+        EmojiMaterial emoji;
+        GlyphMaterial glyph;
+        QVERIFY(emoji.type() != glyph.type());
+    }
+
+    void hasBlendingFlag() {
+        EmojiMaterial mat;
+        QVERIFY(mat.flags() & QSGMaterial::Blending);
+    }
+};
+
+// Run multiple test objects in one binary
+int main(int argc, char *argv[]) {
+    QGuiApplication app(argc, argv);
+    int status = 0;
+    auto runTest = [&](QObject *obj) {
+        status |= QTest::qExec(obj, argc, argv);
+        delete obj;
+    };
+    runTest(new TestTerminalRenderer);
+    runTest(new TestEmojiMaterial);
+    return status;
+}
+
 #include "test_TerminalRenderer.moc"
