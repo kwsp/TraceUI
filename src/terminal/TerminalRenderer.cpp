@@ -208,9 +208,10 @@ static const QSGGeometry::AttributeSet &glyphAttributeSet() {
 }
 
 // ── Scene graph ──────────────────────────────────────────────────────────────
-// Two-layer rendering:
+// Three-layer rendering:
 //   1. Background node: colored quads for each cell's background
-//   2. Glyph node: textured quads (atlas) with QSGTextureMaterial (proven working)
+//   2. Glyph node: tinted textured quads for monospace text (alpha atlas)
+//   3. Emoji node: full-color textured quads for emoji (RGBA atlas, passthrough shader)
 
 QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *_) {
     if ((m_backend == nullptr) || (window() == nullptr))
@@ -357,8 +358,7 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             bgVertSpan[bvi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
             bvi += kVerticesPerCell;
 
-            if (cp != 0 && isEmoji(cp)) {
-                m_emojiAtlas.ensureGlyph(cp);
+            if (cp != 0 && isEmoji(cp) && m_emojiAtlas.ensureGlyph(cp)) {
                 const GlyphUV uv = m_emojiAtlas.uv(cp);
                 // 2-wide quad
                 const auto ex2 = static_cast<float>(x1 + 2.0F * m_cellWidth);
