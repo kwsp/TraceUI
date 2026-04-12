@@ -8,11 +8,6 @@
 #include "backend/NetworkHistoryProvider.h"
 #include "config.h"
 
-#if BUILD_TERMINAL
-#include "terminal/TerminalBackend.h"
-#include "terminal/TerminalModel.h"
-#endif
-
 #ifdef Q_OS_MACOS
 #include "backend/macos/NetworkMonitorMacOS.h"
 #include "backend/macos/ProcessWatcherMacOS.h"

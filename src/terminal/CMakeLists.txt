@@ -7,8 +7,10 @@ qt6_add_qml_module(TraceUITerminal
     SOURCES
         TerminalBackend.h
         TerminalBackend.cpp
-        TerminalModel.h
-        TerminalModel.cpp
+        TerminalRenderer.h
+        TerminalRenderer.cpp
+        GlyphMaterial.h
+        GlyphMaterial.cpp
         FileDescriptor.h
         FileDescriptor.cpp
 )
@@ -18,9 +20,20 @@ target_include_directories(TraceUITerminal PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )
 
+find_package(Qt6 REQUIRED COMPONENTS ShaderTools)
+
+qt6_add_shaders(TraceUITerminal "glyph_shaders"
+    PREFIX
+        "/terminal"
+    FILES
+        shaders/glyph.vert
+        shaders/glyph.frag
+)
+
 target_link_libraries(TraceUITerminal PUBLIC
     Qt6::Core
     Qt6::Gui
     Qt6::Qml
+    Qt6::Quick
     vterm
 )
