@@ -42,7 +42,7 @@ public:
     void ensureMetrics();
 
 protected:
-    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
+    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *_) override;
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
 signals:
