@@ -30,6 +30,14 @@ qt6_add_shaders(TraceUITerminal "glyph_shaders"
         shaders/glyph.frag
 )
 
+qt6_add_shaders(TraceUITerminal "emoji_shaders"
+    PREFIX
+        "/terminal"
+    FILES
+        shaders/emoji.vert
+        shaders/emoji.frag
+)
+
 target_link_libraries(TraceUITerminal PUBLIC
     Qt6::Core
     Qt6::Gui
