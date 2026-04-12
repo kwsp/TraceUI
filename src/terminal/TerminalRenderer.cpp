@@ -94,7 +94,7 @@ static constexpr CodepointRange kAtlasRanges[] = {
     {0x2580, 0x259F}, // Block Elements (32)
     {0x2190, 0x21FF}, // Arrows (112)
     {0x25A0, 0x25FF}, // Geometric Shapes (96)
-    {0x2600, 0x26FF}, // Misc Symbols (256)
+    // {0x2600, 0x26FF} removed — handled by emoji atlas
 };
 // NOLINTEND(*-designated-initializers)
 
@@ -218,6 +218,9 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
 
     rebuildAtlas();
 
+    const qreal dpr = (window() != nullptr) ? window()->devicePixelRatio() : 1.0;
+    m_emojiAtlas.setCellSize(m_cellWidth, m_cellHeight, dpr);
+
     // (Re-)create atlas texture if needed
     if ((m_atlasTexture == nullptr) || m_atlasTexture->textureSize() != m_atlasImage.size()) {
         delete m_atlasTexture;
@@ -234,10 +237,11 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     const int vertexCount = cellCount * kVerticesPerCell;
 
     // ── Root node (container) ────────────────────────────────────────────
-    // Structure: rootNode -> bgNode + glyphNode
+    // Structure: rootNode -> bgNode + glyphNode + emojiNode
     QSGNode *rootNode = oldNode;
     QSGGeometryNode *bgNode = nullptr;
     QSGGeometryNode *glyphNode = nullptr;
+    QSGGeometryNode *emojiNode = nullptr;
 
     if (rootNode == nullptr) {
         rootNode = new QSGNode;
@@ -271,6 +275,20 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             return glyphNode;
         }();
         rootNode->appendChildNode(glyphNode);
+
+        // Emoji layer
+        emojiNode = [&]() {
+            auto *node = new QSGGeometryNode;
+            node->setFlag(QSGNode::OwnsGeometry);
+            node->setFlag(QSGNode::OwnsMaterial);
+            auto *geom = new QSGGeometry(glyphAttributeSet(), 0);
+            geom->setDrawingMode(QSGGeometry::DrawTriangles);
+            node->setGeometry(geom);
+            auto *mat = new EmojiMaterial;
+            node->setMaterial(mat);
+            return node;
+        }();
+        rootNode->appendChildNode(emojiNode);
     } else {
         // NOLINTBEGIN(*-static-cast-downcast)
         bgNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(0));
@@ -278,81 +296,115 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
 
         auto *glyphMat = static_cast<GlyphMaterial *>(glyphNode->material());
         glyphMat->setTexture(m_atlasTexture);
+
+        emojiNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(2));
+        auto *emojiMat = static_cast<EmojiMaterial *>(emojiNode->material());
+        emojiMat->setTexture(m_emojiTexture);
         // NOLINTEND(*-static-cast-downcast)
     }
 
     // ── Resize geometry if needed ────────────────────────────────────────
-    auto *bgGeom = bgNode->geometry();
+    auto *bgGeom    = bgNode->geometry();
     auto *glyphGeom = glyphNode->geometry();
+    auto *emojiGeom = emojiNode->geometry();
     if (bgGeom->vertexCount() != vertexCount)
         bgGeom->allocate(vertexCount);
-    if (glyphGeom->vertexCount() != vertexCount)
-        glyphGeom->allocate(vertexCount);
+    // Pre-allocate to upper bound; trimmed after the cell loop
+    glyphGeom->allocate(vertexCount);
+    emojiGeom->allocate(vertexCount);
 
-    auto *bgVerts = bgGeom->vertexDataAsColoredPoint2D();
+    auto *bgVerts    = bgGeom->vertexDataAsColoredPoint2D();
     auto *glyphVerts = static_cast<GlyphVertex *>(glyphGeom->vertexData());
+    auto *emojiVerts = static_cast<GlyphVertex *>(emojiGeom->vertexData());
 
     std::span<QSGGeometry::ColoredPoint2D> bgVertSpan(bgVerts, vertexCount);
     std::span<GlyphVertex> glyphVertSpan(glyphVerts, vertexCount);
+    std::span<GlyphVertex> emojiVertSpan(emojiVerts, vertexCount);
 
     const VTermScreen *screen = m_backend->screen();
 
-    // ── Fill both layers ─────────────────────────────────────────────────
-    int vi = 0;
-    const uint8_t bgA = 255 * 1.0; // background alpha
+    // ── Fill all layers ──────────────────────────────────────────────────
+    int bvi = 0; // background vertex index
+    int tvi = 0; // text vertex index
+    int evi = 0; // emoji vertex index
+    const uint8_t bgA = 255;
+
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
             const VTermPos pos = {r, c};
             VTermScreenCell cell;
             vterm_screen_get_cell(screen, pos, &cell);
 
-            // Character
-            uint32_t cp = cell.chars[0];
-            if (cp == 0)
-                cp = ' ';
-            const GlyphUV &uv = m_uvCache.value(cp, m_spaceUV);
+            const uint32_t cp = cell.chars[0];
 
-            // Colors
             float fgR, fgG, fgB;   // NOLINT(*-init-variables)
             uint8_t bgR, bgG, bgB; // NOLINT(*-init-variables)
             vtermColorToRGBAf32(screen, cell.fg, fgR, fgG, fgB);
             vtermColorToRGBAu8(screen, cell.bg, bgR, bgG, bgB);
 
-            // Cell rect
             const auto x1 = static_cast<float>(c * m_cellWidth);
             const auto y1 = static_cast<float>(r * m_cellHeight);
             const auto x2 = static_cast<float>((c + 1) * m_cellWidth);
             const auto y2 = static_cast<float>((r + 1) * m_cellHeight);
 
             // NOLINTBEGIN(*-magic-numbers)
-            // BG color as uchar RGBA
+            // Background quad (all cells)
+            bgVertSpan[bvi + 0].set(x1, y1, bgR, bgG, bgB, bgA);
+            bgVertSpan[bvi + 1].set(x1, y2, bgR, bgG, bgB, bgA);
+            bgVertSpan[bvi + 2].set(x2, y1, bgR, bgG, bgB, bgA);
+            bgVertSpan[bvi + 3].set(x2, y1, bgR, bgG, bgB, bgA);
+            bgVertSpan[bvi + 4].set(x1, y2, bgR, bgG, bgB, bgA);
+            bgVertSpan[bvi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
+            bvi += kVerticesPerCell;
 
-            // Background triangles (solid color)
-            bgVertSpan[vi + 0].set(x1, y1, bgR, bgG, bgB, bgA);
-            bgVertSpan[vi + 1].set(x1, y2, bgR, bgG, bgB, bgA);
-            bgVertSpan[vi + 2].set(x2, y1, bgR, bgG, bgB, bgA);
-            bgVertSpan[vi + 3].set(x2, y1, bgR, bgG, bgB, bgA);
-            bgVertSpan[vi + 4].set(x1, y2, bgR, bgG, bgB, bgA);
-            bgVertSpan[vi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
-
-            // Glyph triangles (textured + colored)
-            glyphVertSpan[vi + 0].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1.0F);
-            glyphVertSpan[vi + 1].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
-            glyphVertSpan[vi + 2].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
-            glyphVertSpan[vi + 3].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
-            glyphVertSpan[vi + 4].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
-            glyphVertSpan[vi + 5].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1.0F);
-
+            if (cp != 0 && isEmoji(cp)) {
+                m_emojiAtlas.ensureGlyph(cp);
+                const GlyphUV uv = m_emojiAtlas.uv(cp);
+                // 2-wide quad
+                const auto ex2 = static_cast<float>(x1 + 2.0F * m_cellWidth);
+                emojiVertSpan[evi + 0].set(x1,  y1, uv.u1, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                emojiVertSpan[evi + 1].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                emojiVertSpan[evi + 2].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                emojiVertSpan[evi + 3].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                emojiVertSpan[evi + 4].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                emojiVertSpan[evi + 5].set(ex2, y2, uv.u2, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                evi += kVerticesPerCell;
+            } else {
+                const uint32_t renderCp = (cp == 0) ? ' ' : cp;
+                const GlyphUV &uv = m_uvCache.value(renderCp, m_spaceUV);
+                glyphVertSpan[tvi + 0].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 1].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 2].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 3].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 4].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 5].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1.0F);
+                tvi += kVerticesPerCell;
+            }
             // NOLINTEND(*-magic-numbers)
-            vi += kVerticesPerCell;
 
             if (cell.width > 1)
                 c += cell.width - 1;
         }
     }
 
+    // Trim geometry to actual vertex counts used
+    glyphGeom->allocate(tvi);
+    emojiGeom->allocate(evi);
+
+    // Re-upload emoji texture if atlas changed
+    if (m_emojiAtlas.isDirty() || m_emojiTexture == nullptr) {
+        delete m_emojiTexture;
+        m_emojiTexture = window()->createTextureFromImage(
+            m_emojiAtlas.image(), QQuickWindow::TextureHasAlphaChannel);
+        m_emojiTexture->setFiltering(QSGTexture::Linear);
+        m_emojiAtlas.markClean();
+        auto *emojiMat = static_cast<EmojiMaterial *>(emojiNode->material());
+        emojiMat->setTexture(m_emojiTexture);
+    }
+
     bgNode->markDirty(QSGNode::DirtyGeometry);
     glyphNode->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
+    emojiNode->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
     return rootNode;
 }
 

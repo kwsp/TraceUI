@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EmojiAtlas.h"
+#include "EmojiMaterial.h"
 #include "GlyphMaterial.h"
 #include "TerminalBackend.h"
 #include <QHash>
@@ -72,6 +74,10 @@ private:
 
     QImage m_atlasImage;          // kept for re-upload
     QSGTexture *m_atlasTexture{}; // owned by scene graph
+
+    // ── Emoji Atlas ──────────────────────────────────────────────────────────
+    EmojiAtlas m_emojiAtlas;
+    QSGTexture *m_emojiTexture{}; // owned by scene graph
 
     // ── Backend ──────────────────────────────────────────────────────────────
     TerminalBackend *m_backend{};
