@@ -34,4 +34,5 @@ private:
 
     static constexpr int kCols = 16;
     static constexpr int kMaxSlots = 512;
+    static constexpr int kRows = (kMaxSlots + kCols - 1) / kCols;
 };

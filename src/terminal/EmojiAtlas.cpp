@@ -23,7 +23,6 @@ void EmojiAtlas::setCellSize(qreal cellW, qreal cellH, qreal dpr) {
     constexpr qreal kMargin = 1.0;
     const qreal slotW = 2.0 * cellW + 2.0 * kMargin;
     const qreal slotH = cellH + 2.0 * kMargin;
-    constexpr int kRows = (kMaxSlots + kCols - 1) / kCols;
 
     const int physW = static_cast<int>(std::ceil(kCols * slotW * dpr));
     const int physH = static_cast<int>(std::ceil(kRows * slotH * dpr));
@@ -39,11 +38,12 @@ bool EmojiAtlas::ensureGlyph(uint32_t cp) {
         return false;
     if (m_slotsFilled >= kMaxSlots)
         return false;
+    if (m_image.isNull())
+        return false;
 
     constexpr qreal kMargin = 1.0;
     const qreal slotW = 2.0 * m_cellW + 2.0 * kMargin;
     const qreal slotH = m_cellH + 2.0 * kMargin;
-    constexpr int kRows = (kMaxSlots + kCols - 1) / kCols;
     const qreal atlasLogW = kCols * slotW;
     const qreal atlasLogH = kRows * slotH;
 
