@@ -18,6 +18,10 @@ struct GlyphVertex {
     }
 };
 
+struct GlyphUV {
+    float u1, v1, u2, v2;
+};
+
 class GlyphMaterial : public QSGMaterial {
 public:
     GlyphMaterial();

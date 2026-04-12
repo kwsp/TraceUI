@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GlyphMaterial.h"
 #include "TerminalBackend.h"
 #include <QHash>
 #include <QQuickItem>
@@ -66,9 +67,6 @@ private:
     QRawFont m_rawFont;
 
     // Codepoint → UV rect in atlas.  Keyed by Unicode codepoint (not glyph index).
-    struct GlyphUV {
-        float u1, v1, u2, v2;
-    };
     QHash<uint32_t, GlyphUV> m_uvCache; // codepoint → UV
     GlyphUV m_spaceUV{};                // fallback for missing glyphs
 
