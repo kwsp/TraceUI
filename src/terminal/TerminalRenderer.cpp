@@ -296,8 +296,8 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     } else {
         // NOLINTBEGIN(*-static-cast-downcast)
         bgNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(0));
-        glyphNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(1));
 
+        glyphNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(1));
         auto *glyphMat = static_cast<GlyphMaterial *>(glyphNode->material());
         glyphMat->setTexture(m_atlasTexture);
 
@@ -308,7 +308,7 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     }
 
     // ── Resize geometry if needed ────────────────────────────────────────
-    auto *bgGeom    = bgNode->geometry();
+    auto *bgGeom = bgNode->geometry();
     auto *glyphGeom = glyphNode->geometry();
     auto *emojiGeom = emojiNode->geometry();
     if (bgGeom->vertexCount() != vertexCount)
@@ -319,7 +319,7 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     // its buffer, so we cannot write then trim in-place).
     QVarLengthArray<GlyphVertex, 256> emojiStagingBuf;
 
-    auto *bgVerts    = bgGeom->vertexDataAsColoredPoint2D();
+    auto *bgVerts = bgGeom->vertexDataAsColoredPoint2D();
     auto *glyphVerts = static_cast<GlyphVertex *>(glyphGeom->vertexData());
 
     std::span<QSGGeometry::ColoredPoint2D> bgVertSpan(bgVerts, vertexCount);
@@ -360,19 +360,25 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             bgVertSpan[bvi + 5].set(x2, y2, bgR, bgG, bgB, bgA);
             bvi += kVerticesPerCell;
 
+            // libvterm marks continuation cells of double-wide glyphs with chars[0] = UINT32_MAX.
+            // Skip them here — the background quad was already written above.
+            if (cp == static_cast<uint32_t>(-1))
+                continue;
+
             if (cp != 0 && isEmoji(cp))
                 m_emojiAtlas.ensureGlyph(cp); // no-op on cache hit; sets dirty on first insert
+
             const GlyphUV emojiUV = (cp != 0 && isEmoji(cp)) ? m_emojiAtlas.uv(cp) : GlyphUV{};
             if (emojiUV.u2 > 0.0F) { // u2==0 means not in atlas (full or PUA fallback)
                 const GlyphUV &uv = emojiUV;
                 // 2-wide quad pushed into staging buffer
                 const auto ex2 = static_cast<float>(x1 + 2.0F * m_cellWidth);
                 GlyphVertex v[kVerticesPerCell];
-                v[0].set(x1,  y1, uv.u1, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[1].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[0].set(x1, y1, uv.u1, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[1].set(x1, y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
                 v[2].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
                 v[3].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[4].set(x1,  y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[4].set(x1, y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
                 v[5].set(ex2, y2, uv.u2, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
                 emojiStagingBuf.append(v, kVerticesPerCell);
             } else {
@@ -387,9 +393,6 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
                 tvi += kVerticesPerCell;
             }
             // NOLINTEND(*-magic-numbers)
-
-            if (cell.width > 1)
-                c += cell.width - 1;
         }
     }
 
@@ -403,8 +406,8 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     // Re-upload emoji texture if atlas changed
     if (m_emojiAtlas.isDirty() || m_emojiTexture == nullptr) {
         delete m_emojiTexture;
-        m_emojiTexture = window()->createTextureFromImage(
-            m_emojiAtlas.image(), QQuickWindow::TextureHasAlphaChannel);
+        m_emojiTexture = window()->createTextureFromImage(m_emojiAtlas.image(),
+                                                          QQuickWindow::TextureHasAlphaChannel);
         m_emojiTexture->setFiltering(QSGTexture::Linear);
         m_emojiAtlas.markClean();
         auto *emojiMat = static_cast<EmojiMaterial *>(emojiNode->material());

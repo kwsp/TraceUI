@@ -31,6 +31,7 @@ private:
     qreal m_cellW{};
     qreal m_cellH{};
     qreal m_dpr{1.0};
+    qreal m_emojiSize{}; // pixel size used for emoji glyphs; equals m_cellH
 
     static constexpr int kCols = 16;
     static constexpr int kMaxSlots = 512;

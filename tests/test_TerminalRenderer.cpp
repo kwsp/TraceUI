@@ -124,6 +124,13 @@ private slots:
         QVERIFY(!isEmoji(0xFFFFF)); // SPUA-A end
     }
 
+    void isEmojiRejectsLibvtermContinuationSentinel() {
+        // libvterm stamps continuation cells of double-wide glyphs with chars[0] = UINT32_MAX.
+        // This value happens to be >= 0x1F000, so it would pass the emoji range check
+        // without an explicit guard.
+        QVERIFY(!isEmoji(static_cast<uint32_t>(-1)));
+    }
+
     void ensureGlyphReturnsTrueOnMiss() {
         EmojiAtlas atlas;
         atlas.setCellSize(8.0, 16.0, 1.0);
@@ -186,6 +193,29 @@ private slots:
         QVERIFY(!atlas.isDirty());
         // Cache intact
         QVERIFY(atlas.ensureGlyph(0x1F600) == false);
+    }
+
+    void dprChangeInvalidatesCache() {
+        // A change in device pixel ratio requires a new physical atlas image.
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.ensureGlyph(0x1F600);
+        atlas.markClean();
+        // Different DPR — must reset
+        atlas.setCellSize(8.0, 16.0, 2.0);
+        QVERIFY(atlas.isDirty());
+        // Cache cleared — ensureGlyph should return true again
+        QVERIFY(atlas.ensureGlyph(0x1F600) == true);
+    }
+
+    // Design-intent documentation test: isEmoji() is intentionally inclusive for the
+    // 0x2600-0x27BF Misc Symbols range, which includes glyphs that terminals may render
+    // as single-width (cell.width == 1, no VS16 selector). The cell.width == 0 gate in
+    // TerminalRenderer is what prevents incorrectly skipping the next cell; isEmoji()
+    // itself does not need to reject these codepoints.
+    void isEmojiIncludesMiscSymbols() {
+        QVERIFY(isEmoji(0x2600)); // ☀ SUN — may be single-width without VS16
+        QVERIFY(isEmoji(0x2603)); // ☃ SNOWMAN — may be single-width without VS16
     }
 };
 

@@ -95,6 +95,9 @@ Refactor the entire UI into the high-density HUD layout (System vs Network colum
     - [x] **Retina Support**: Scale the atlas using `devicePixelRatio` for high-DPI crispness.
     - [ ] **Emoji Support**: Render full-color emojis (currently unsupported, requires a separate color-atlas or shader branch that bypasses color-tinting for emoji codepoints).
 - [ ] Windows ConPTY support.
+- [ ] Emoji rendering bugs
+    - [x] Empty single bg space behind emoji (wrong bg color)
+    - [ ] Emoji rendered too big. Need to scale with font size properly
 
 ## Phase 4: Real Backend Data
 - [x] **SystemMonitor** — replace all placeholders with real data:

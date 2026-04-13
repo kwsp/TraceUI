@@ -5,6 +5,7 @@
 #include <cmath>
 
 bool isEmoji(uint32_t cp) {
+    if (cp == static_cast<uint32_t>(-1)) return false; // libvterm continuation-cell sentinel
     if (cp >= 0xE000  && cp <= 0xF8FF)  return false; // Basic PUA (Nerd Font icons)
     if (cp >= 0xF0000 && cp <= 0xFFFFF) return false; // Supplementary PUA-A (Nerd Fonts v3)
     return (cp >= 0x1F000)
@@ -19,6 +20,7 @@ void EmojiAtlas::setCellSize(qreal cellW, qreal cellH, qreal dpr) {
     m_cellW = cellW;
     m_cellH = cellH;
     m_dpr = dpr;
+    m_emojiSize = cellH;
     m_uvCache.clear();
     m_slotsFilled = 0;
 
@@ -60,7 +62,7 @@ bool EmojiAtlas::ensureGlyph(uint32_t cp) {
     font.setFamilies({QStringLiteral("Apple Color Emoji"),
                       QStringLiteral("Noto Color Emoji"),
                       QStringLiteral("Segoe UI Emoji")});
-    font.setPixelSize(static_cast<int>(m_cellH));
+    font.setPixelSize(static_cast<int>(m_emojiSize));
 
     const QFontMetricsF fm(font);
 
