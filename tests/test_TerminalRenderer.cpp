@@ -133,20 +133,20 @@ private slots:
 
     void ensureGlyphReturnsTrueOnMiss() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         QVERIFY(atlas.ensureGlyph(0x1F600) == true);
     }
 
     void ensureGlyphReturnsFalseOnHit() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.ensureGlyph(0x1F600);
         QVERIFY(atlas.ensureGlyph(0x1F600) == false);
     }
 
     void isDirtyAfterEnsureGlyph() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.markClean();
         atlas.ensureGlyph(0x1F600);
         QVERIFY(atlas.isDirty());
@@ -154,7 +154,7 @@ private slots:
 
     void markCleanClearsDirtyFlag() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.ensureGlyph(0x1F600);
         atlas.markClean();
         QVERIFY(!atlas.isDirty());
@@ -162,7 +162,7 @@ private slots:
 
     void uvHasValidCoordinatesAfterEnsure() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.ensureGlyph(0x1F600);
         GlyphUV uv = atlas.uv(0x1F600);
         QVERIFY(uv.u1 >= 0.0F && uv.u1 < uv.u2);
@@ -173,11 +173,11 @@ private slots:
 
     void setCellSizeInvalidatesCacheWhenDimensionsChange() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.ensureGlyph(0x1F600);
         atlas.markClean();
         // Different cell size — should reset
-        atlas.setCellSize(10.0, 20.0, 1.0);
+        atlas.setCellSize(10.0, 20.0, 1.0, 14.0);
         QVERIFY(atlas.isDirty());
         // Cache cleared — ensureGlyph should return true again
         QVERIFY(atlas.ensureGlyph(0x1F600) == true);
@@ -185,11 +185,11 @@ private slots:
 
     void setCellSizeIsNoopWhenDimensionsUnchanged() {
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.ensureGlyph(0x1F600);
         atlas.markClean();
         // Same dimensions — no-op
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         QVERIFY(!atlas.isDirty());
         // Cache intact
         QVERIFY(atlas.ensureGlyph(0x1F600) == false);
@@ -198,21 +198,32 @@ private slots:
     void dprChangeInvalidatesCache() {
         // A change in device pixel ratio requires a new physical atlas image.
         EmojiAtlas atlas;
-        atlas.setCellSize(8.0, 16.0, 1.0);
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
         atlas.ensureGlyph(0x1F600);
         atlas.markClean();
         // Different DPR — must reset
-        atlas.setCellSize(8.0, 16.0, 2.0);
+        atlas.setCellSize(8.0, 16.0, 2.0, 11.0);
         QVERIFY(atlas.isDirty());
         // Cache cleared — ensureGlyph should return true again
         QVERIFY(atlas.ensureGlyph(0x1F600) == true);
     }
 
+    void emojiHeightChangeInvalidatesCache() {
+        // A change in emojiHeight changes the rendered glyph size, so the atlas must reset.
+        EmojiAtlas atlas;
+        atlas.setCellSize(8.0, 16.0, 1.0, 11.0);
+        atlas.ensureGlyph(0x1F600);
+        atlas.markClean();
+        // Different emojiHeight — must reset
+        atlas.setCellSize(8.0, 16.0, 1.0, 14.0);
+        QVERIFY(atlas.isDirty());
+        QVERIFY(atlas.ensureGlyph(0x1F600) == true);
+    }
+
     // Design-intent documentation test: isEmoji() is intentionally inclusive for the
     // 0x2600-0x27BF Misc Symbols range, which includes glyphs that terminals may render
-    // as single-width (cell.width == 1, no VS16 selector). The cell.width == 0 gate in
-    // TerminalRenderer is what prevents incorrectly skipping the next cell; isEmoji()
-    // itself does not need to reject these codepoints.
+    // as single-width (cell.width == 1, no VS16 selector). The libvterm sentinel guard in
+    // TerminalRenderer is what prevents incorrectly rendering the continuation cell.
     void isEmojiIncludesMiscSymbols() {
         QVERIFY(isEmoji(0x2600)); // ☀ SUN — may be single-width without VS16
         QVERIFY(isEmoji(0x2603)); // ☃ SNOWMAN — may be single-width without VS16

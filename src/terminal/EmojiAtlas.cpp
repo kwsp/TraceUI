@@ -13,14 +13,14 @@ bool isEmoji(uint32_t cp) {
         || (cp >= 0x2300 && cp <= 0x23FF);
 }
 
-void EmojiAtlas::setCellSize(qreal cellW, qreal cellH, qreal dpr) {
-    if (cellW == m_cellW && cellH == m_cellH && dpr == m_dpr)
+void EmojiAtlas::setCellSize(qreal cellW, qreal cellH, qreal dpr, qreal emojiHeight) {
+    if (cellW == m_cellW && cellH == m_cellH && dpr == m_dpr && emojiHeight == m_emojiSize)
         return;
 
     m_cellW = cellW;
     m_cellH = cellH;
     m_dpr = dpr;
-    m_emojiSize = cellH;
+    m_emojiSize = emojiHeight;
     m_uvCache.clear();
     m_slotsFilled = 0;
 

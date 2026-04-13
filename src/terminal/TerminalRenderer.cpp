@@ -223,7 +223,8 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     rebuildAtlas();
 
     const qreal dpr = (window() != nullptr) ? window()->devicePixelRatio() : 1.0;
-    m_emojiAtlas.setCellSize(m_cellWidth, m_cellHeight, dpr);
+    const QFontMetricsF fm(QFont(m_fontFamily, m_fontSize));
+    m_emojiAtlas.setCellSize(m_cellWidth, m_cellHeight, dpr, fm.capHeight());
 
     // (Re-)create atlas texture if needed
     if ((m_atlasTexture == nullptr) || m_atlasTexture->textureSize() != m_atlasImage.size()) {
