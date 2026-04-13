@@ -3,6 +3,7 @@
 #include "EmojiAtlas.h"
 #include "EmojiMaterial.h"
 #include "GlyphMaterial.h"
+#include "SymbolAtlas.h"
 #include "TerminalBackend.h"
 #include <QHash>
 #include <QQuickItem>
@@ -78,6 +79,10 @@ private:
     // ── Emoji Atlas ──────────────────────────────────────────────────────────
     EmojiAtlas m_emojiAtlas;
     QSGTexture *m_emojiTexture{}; // owned by scene graph
+
+    // ── Symbol Atlas (Nerd Font SPUA-A, lazy, fg-tinted) ─────────────────────
+    SymbolAtlas m_symbolAtlas;
+    QSGTexture *m_symbolTexture{}; // owned by scene graph
 
     // ── Backend ──────────────────────────────────────────────────────────────
     TerminalBackend *m_backend{};

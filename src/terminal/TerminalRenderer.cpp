@@ -1,5 +1,6 @@
 #include "TerminalRenderer.h"
 #include "GlyphMaterial.h"
+#include "SymbolAtlas.h"
 #include <QFontMetricsF>
 #include <QPainter>
 #include <QQuickWindow>
@@ -245,10 +246,11 @@ static const QSGGeometry::AttributeSet &glyphAttributeSet() {
 }
 
 // ── Scene graph ──────────────────────────────────────────────────────────────
-// Three-layer rendering:
+// Four-layer rendering:
 //   1. Background node: colored quads for each cell's background
-//   2. Glyph node: tinted textured quads for monospace text (alpha atlas)
+//   2. Glyph node: tinted textured quads for monospace text (alpha atlas, pre-baked)
 //   3. Emoji node: full-color textured quads for emoji (RGBA atlas, passthrough shader)
+//   4. Symbol node: tinted textured quads for NF SPUA-A icons (alpha atlas, lazy)
 
 QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *_) {
     if ((m_backend == nullptr) || (window() == nullptr))
@@ -259,6 +261,7 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     const qreal dpr = (window() != nullptr) ? window()->devicePixelRatio() : 1.0;
     const QFontMetricsF fm(QFont(m_fontFamily, m_fontSize));
     m_emojiAtlas.setCellSize(m_cellWidth, m_cellHeight, dpr, fm.capHeight());
+    m_symbolAtlas.setCellSize(m_cellWidth, m_cellHeight, dpr, m_cellHeight);
 
     // (Re-)create atlas texture if needed
     if ((m_atlasTexture == nullptr) || m_atlasTexture->textureSize() != m_atlasImage.size()) {
@@ -276,11 +279,12 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     const int vertexCount = cellCount * kVerticesPerCell;
 
     // ── Root node (container) ────────────────────────────────────────────
-    // Structure: rootNode -> bgNode + glyphNode + emojiNode
+    // Structure: rootNode -> bgNode + glyphNode + emojiNode + symbolNode
     QSGNode *rootNode = oldNode;
     QSGGeometryNode *bgNode = nullptr;
     QSGGeometryNode *glyphNode = nullptr;
     QSGGeometryNode *emojiNode = nullptr;
+    QSGGeometryNode *symbolNode = nullptr;
 
     if (rootNode == nullptr) {
         rootNode = new QSGNode;
@@ -328,6 +332,20 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             return node;
         }();
         rootNode->appendChildNode(emojiNode);
+
+        // Symbol layer (NF SPUA-A, lazy, fg-tinted via glyph shader)
+        symbolNode = [&]() {
+            auto *node = new QSGGeometryNode;
+            node->setFlag(QSGNode::OwnsGeometry);
+            node->setFlag(QSGNode::OwnsMaterial);
+            auto *geom = new QSGGeometry(glyphAttributeSet(), 0);
+            geom->setDrawingMode(QSGGeometry::DrawTriangles);
+            node->setGeometry(geom);
+            auto *mat = new GlyphMaterial;
+            node->setMaterial(mat);
+            return node;
+        }();
+        rootNode->appendChildNode(symbolNode);
     } else {
         // NOLINTBEGIN(*-static-cast-downcast)
         bgNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(0));
@@ -339,6 +357,10 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
         emojiNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(2));
         auto *emojiMat = static_cast<EmojiMaterial *>(emojiNode->material());
         emojiMat->setTexture(m_emojiTexture);
+
+        symbolNode = static_cast<QSGGeometryNode *>(rootNode->childAtIndex(3));
+        auto *symbolMat = static_cast<GlyphMaterial *>(symbolNode->material());
+        symbolMat->setTexture(m_symbolTexture);
         // NOLINTEND(*-static-cast-downcast)
     }
 
@@ -346,13 +368,15 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
     auto *bgGeom = bgNode->geometry();
     auto *glyphGeom = glyphNode->geometry();
     auto *emojiGeom = emojiNode->geometry();
+    auto *symbolGeom = symbolNode->geometry();
     if (bgGeom->vertexCount() != vertexCount)
         bgGeom->allocate(vertexCount);
     // Pre-allocate to upper bound; trimmed after the cell loop
     glyphGeom->allocate(vertexCount);
-    // Emoji vertices are collected into a staging vector (allocate() zeros
+    // Emoji/symbol vertices are collected into staging vectors (allocate() zeros
     // its buffer, so we cannot write then trim in-place).
     QVarLengthArray<GlyphVertex, 256> emojiStagingBuf;
+    QVarLengthArray<GlyphVertex, 256> symbolStagingBuf;
 
     auto *bgVerts = bgGeom->vertexDataAsColoredPoint2D();
     auto *glyphVerts = static_cast<GlyphVertex *>(glyphGeom->vertexData());
@@ -400,26 +424,44 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             if (cp == static_cast<uint32_t>(-1))
                 continue;
 
-            if (cp != 0 && isEmoji(cp))
-                m_emojiAtlas.ensureGlyph(cp); // no-op on cache hit; sets dirty on first insert
+            const bool emojiGlyph  = (cp != 0 && isEmoji(cp));
+            const bool symbolGlyph = (!emojiGlyph && isNerdFontSymbol(cp));
 
-            const GlyphUV emojiUV = (cp != 0 && isEmoji(cp)) ? m_emojiAtlas.uv(cp) : GlyphUV{};
-            if (emojiUV.u2 > 0.0F) { // u2==0 means not in atlas (full or PUA fallback)
-                const GlyphUV &uv = emojiUV;
-                // 2-wide quad pushed into staging buffer
+            if (emojiGlyph)
+                m_emojiAtlas.ensureGlyph(cp);  // no-op on cache hit
+            if (symbolGlyph)
+                m_symbolAtlas.ensureGlyph(cp); // no-op on cache hit
+
+            const GlyphUV emojiUV  = emojiGlyph  ? m_emojiAtlas.uv(cp)  : GlyphUV{};
+            const GlyphUV symbolUV = symbolGlyph ? m_symbolAtlas.uv(cp) : GlyphUV{};
+
+            if (emojiUV.u2 > 0.0F) {
+                // Color emoji — 2-wide RGBA quad, passthrough shader
                 const auto ex2 = static_cast<float>(x1 + 2.0F * m_cellWidth);
                 GlyphVertex v[kVerticesPerCell];
-                v[0].set(x1, y1, uv.u1, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[1].set(x1, y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[2].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[3].set(ex2, y1, uv.u2, uv.v1, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[4].set(x1, y2, uv.u1, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
-                v[5].set(ex2, y2, uv.u2, uv.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[0].set(x1,  y1, emojiUV.u1, emojiUV.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[1].set(x1,  y2, emojiUV.u1, emojiUV.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[2].set(ex2, y1, emojiUV.u2, emojiUV.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[3].set(ex2, y1, emojiUV.u2, emojiUV.v1, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[4].set(x1,  y2, emojiUV.u1, emojiUV.v2, 1.0F, 1.0F, 1.0F, 1.0F);
+                v[5].set(ex2, y2, emojiUV.u2, emojiUV.v2, 1.0F, 1.0F, 1.0F, 1.0F);
                 emojiStagingBuf.append(v, kVerticesPerCell);
+            } else if (symbolUV.u2 > 0.0F) {
+                // NF SPUA-A symbol — 2-wide, fg-tinted via glyph shader
+                const auto sx2 = static_cast<float>(x1 + 2.0F * m_cellWidth);
+                GlyphVertex v[kVerticesPerCell];
+                v[0].set(x1,  y1, symbolUV.u1, symbolUV.v1, fgR, fgG, fgB, 1.0F);
+                v[1].set(x1,  y2, symbolUV.u1, symbolUV.v2, fgR, fgG, fgB, 1.0F);
+                v[2].set(sx2, y1, symbolUV.u2, symbolUV.v1, fgR, fgG, fgB, 1.0F);
+                v[3].set(sx2, y1, symbolUV.u2, symbolUV.v1, fgR, fgG, fgB, 1.0F);
+                v[4].set(x1,  y2, symbolUV.u1, symbolUV.v2, fgR, fgG, fgB, 1.0F);
+                v[5].set(sx2, y2, symbolUV.u2, symbolUV.v2, fgR, fgG, fgB, 1.0F);
+                symbolStagingBuf.append(v, kVerticesPerCell);
             } else {
+                // Pre-baked glyph atlas (ASCII, box-drawing, BMP NF PUA)
                 const uint32_t renderCp = (cp == 0) ? ' ' : cp;
                 const GlyphUV &uv = m_uvCache.value(renderCp, m_spaceUV);
-                // isWideAtlasGlyph: NF PUA ranges have 2-cell atlas slots regardless of
+                // isWideAtlasGlyph: BMP NF PUA ranges have 2-cell atlas slots regardless of
                 // cell.width (libvterm always reports 1 for PUA via wcwidth).
                 // cell.width == 2: fallback for genuinely wide Unicode chars (CJK etc.).
                 const auto gx2 = (isWideAtlasGlyph(renderCp) || cell.width == 2)
@@ -437,12 +479,16 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
         }
     }
 
-    // Trim glyph geometry; upload emoji from staging buffer
+    // Trim glyph geometry; upload emoji and symbol from staging buffers
     glyphGeom->allocate(tvi);
     const int evi = emojiStagingBuf.size();
     emojiGeom->allocate(evi);
     if (evi > 0)
         memcpy(emojiGeom->vertexData(), emojiStagingBuf.data(), evi * sizeof(GlyphVertex));
+    const int svi = symbolStagingBuf.size();
+    symbolGeom->allocate(svi);
+    if (svi > 0)
+        memcpy(symbolGeom->vertexData(), symbolStagingBuf.data(), svi * sizeof(GlyphVertex));
 
     // Re-upload emoji texture if atlas changed
     if (m_emojiAtlas.isDirty() || m_emojiTexture == nullptr) {
@@ -455,9 +501,21 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
         emojiMat->setTexture(m_emojiTexture);
     }
 
+    // Re-upload symbol texture if atlas changed
+    if (m_symbolAtlas.isDirty() || m_symbolTexture == nullptr) {
+        delete m_symbolTexture;
+        m_symbolTexture = window()->createTextureFromImage(m_symbolAtlas.image(),
+                                                           QQuickWindow::TextureHasAlphaChannel);
+        m_symbolTexture->setFiltering(QSGTexture::Linear);
+        m_symbolAtlas.markClean();
+        auto *symbolMat = static_cast<GlyphMaterial *>(symbolNode->material());
+        symbolMat->setTexture(m_symbolTexture);
+    }
+
     bgNode->markDirty(QSGNode::DirtyGeometry);
     glyphNode->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
     emojiNode->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
+    symbolNode->markDirty(QSGNode::DirtyGeometry | QSGNode::DirtyMaterial);
     return rootNode;
 }
 
