@@ -20,10 +20,10 @@ public:
     bool ensureGlyph(uint32_t codepoint);
 
     // UV rect for a codepoint. Only valid after a successful ensureGlyph call.
-    GlyphUV uv(uint32_t codepoint) const;
+    [[nodiscard]] GlyphUV uv(uint32_t codepoint) const;
 
-    const QImage &image() const { return m_image; }
-    bool isDirty() const { return m_dirty; }
+    [[nodiscard]] const QImage &image() const { return m_image; }
+    [[nodiscard]] bool isDirty() const { return m_dirty; }
     void markClean() { m_dirty = false; }
 
 private:

@@ -32,12 +32,13 @@ public:
     GlyphMaterial &operator=(const GlyphMaterial &) = delete;
     GlyphMaterial &operator=(GlyphMaterial &&) = delete;
 
-    QSGMaterialType *type() const override;
-    QSGMaterialShader *createShader(QSGRendererInterface::RenderMode mode) const override;
+    [[nodiscard]] QSGMaterialType *type() const override;
+    [[nodiscard]] QSGMaterialShader *
+    createShader(QSGRendererInterface::RenderMode mode) const override;
     int compare(const QSGMaterial *other) const override;
 
     void setTexture(QSGTexture *texture) { m_texture = texture; }
-    QSGTexture *texture() const { return m_texture; }
+    [[nodiscard]] QSGTexture *texture() const { return m_texture; }
 
 private:
     QSGTexture *m_texture = nullptr;
