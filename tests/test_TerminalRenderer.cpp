@@ -3,6 +3,7 @@
 #include "GlyphMaterial.h"
 #include "TerminalBackend.h"
 #include "TerminalRenderer.h"
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QSignalSpy>
 #include <QTest>
@@ -79,6 +80,22 @@ private slots:
         // Cell dimensions should be snapped to integers (std::ceil)
         QCOMPARE(renderer.cellWidth(), std::ceil(renderer.cellWidth()));
         QCOMPARE(renderer.cellHeight(), std::ceil(renderer.cellHeight()));
+    }
+};
+
+class TestBundledFonts : public QObject {
+    Q_OBJECT
+private slots:
+    void testBundledFontsLoad() {
+        // Mirror what production main.cpp does — fonts must be loadable from Qt resources.
+        const int hackId = QFontDatabase::addApplicationFont(
+            QStringLiteral(":/fonts/Hack-Regular.ttf"));
+        const int nfId = QFontDatabase::addApplicationFont(
+            QStringLiteral(":/fonts/NF/SymbolsNerdFontMono-Regular.ttf"));
+        QVERIFY(hackId != -1);
+        QVERIFY(nfId   != -1);
+        QVERIFY(QFontDatabase::families().contains(QStringLiteral("Hack")));
+        QVERIFY(QFontDatabase::families().contains(QStringLiteral("Symbols Nerd Font Mono")));
     }
 };
 
@@ -239,6 +256,7 @@ int main(int argc, char *argv[]) {
         delete obj;
     };
     runTest(new TestTerminalRenderer);
+    runTest(new TestBundledFonts);
     runTest(new TestEmojiMaterial);
     runTest(new TestEmojiAtlas);
     return status;

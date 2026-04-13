@@ -84,6 +84,7 @@ void TerminalRenderer::recalcMetrics() {
 
 struct CodepointRange {
     char32_t first, last;
+    bool wide = false; // true → 2-cell-wide slot in the atlas
 };
 
 // NOLINTBEGIN(*-designated-initializers)
@@ -95,9 +96,16 @@ static constexpr CodepointRange kAtlasRanges[] = {
     {0x2190, 0x21FF}, // Arrows (112)
     {0x25A0, 0x25FF}, // Geometric Shapes (96)
     // {0x2600, 0x26FF} removed — handled by emoji atlas
-    {0xE000, 0xE4FF}, // Nerd Font: Seti-UI, Devicons
-    {0xEA60, 0xEBFF}, // Nerd Font: Codicons
-    {0xF000, 0xF5FF}, // Nerd Font: Font Awesome
+    // ── Nerd Font v3 BMP ranges (SymbolsNerdFontMono) — 2-cell-wide ────────
+    {0xE000, 0xE00A, true}, // Custom / Seti-UI
+    {0xE0A0, 0xE0D7, true}, // Powerline + Powerline Extra
+    {0xE200, 0xE2A9, true}, // IEC Power Symbols
+    {0xE300, 0xE3E3, true}, // Font Logos (formerly Linux Logo)
+    {0xE5FA, 0xE6B7, true}, // Seti-UI Extra
+    {0xE700, 0xE8EF, true}, // Devicons
+    {0xEA60, 0xEC1E, true}, // Codicons
+    {0xED00, 0xEFCE, true}, // Material Design icons
+    {0xF000, 0xF533, true}, // Font Awesome + Octicons + Powerline Extra
 };
 // NOLINTEND(*-designated-initializers)
 
@@ -108,15 +116,34 @@ static int totalGlyphCount() {
     return n;
 }
 
+// Column slots consumed in the atlas grid (wide glyphs occupy 2 columns each).
+static int totalAtlasSlots() {
+    int n = 0;
+    for (const auto &r : kAtlasRanges)
+        n += static_cast<int>(r.last - r.first + 1) * (r.wide ? 2 : 1);
+    return n;
+}
+
+// Returns true for codepoints whose atlas slot is 2-cell wide (Nerd Font ranges).
+// Used to override cell.width, which libvterm always reports as 1 for PUA codepoints.
+static bool isWideAtlasGlyph(uint32_t cp) {
+    for (const auto &r : kAtlasRanges)
+        if (r.wide && cp >= r.first && cp <= r.last)
+            return true;
+    return false;
+}
+
 void TerminalRenderer::rebuildAtlas() {
     if (!m_atlasDirty && !m_uvCache.isEmpty())
         return;
 
     QFont font(m_fontFamily, m_fontSize);
+    font.setFamilies({m_fontFamily, QStringLiteral("Symbols Nerd Font Mono")});
 
     const int glyphCount = totalGlyphCount();
+    // +1 row safety for any row-wrap padding introduced by wide glyphs.
     constexpr int kCols = 32;
-    const int kRows = (glyphCount + kCols - 1) / kCols;
+    const int kRows = (totalAtlasSlots() + kCols - 1) / kCols + 1;
 
     const qreal dpr = (window() != nullptr) ? window()->devicePixelRatio() : 1.0;
     const qreal margin = 1.0; // 1 logical pixel padding to prevent antialiasing bleed
@@ -143,14 +170,20 @@ void TerminalRenderer::rebuildAtlas() {
     const qreal atlasLogicalW = kCols * cellBoxW;
     const qreal atlasLogicalH = kRows * cellBoxH;
 
+    // idx is a column-slot cursor. Wide glyphs consume 2 columns; if a wide glyph
+    // would start on the last column of a row it wraps to the next row instead.
     int idx = 0;
     for (const auto &range : kAtlasRanges) {
-        for (char32_t cp = range.first; cp <= range.last; ++cp, ++idx) {
+        for (char32_t cp = range.first; cp <= range.last; ++cp) {
+            if (range.wide && (idx % kCols) == kCols - 1)
+                ++idx; // skip lone trailing column — wrap wide glyph to next row
+
             const int col = idx % kCols;
             const int row = idx / kCols;
 
             const qreal logicalX = col * cellBoxW;
             const qreal logicalY = row * cellBoxH;
+            const qreal glyphW   = range.wide ? 2.0 * m_cellWidth : m_cellWidth;
 
             // Draw text inside the margin
             painter.drawText(QPointF(logicalX + margin, logicalY + margin + m_ascent),
@@ -158,7 +191,7 @@ void TerminalRenderer::rebuildAtlas() {
 
             const qreal u1 = logicalX + margin;
             const qreal v1 = logicalY + margin;
-            const qreal u2 = u1 + m_cellWidth;
+            const qreal u2 = u1 + glyphW;
             const qreal v2 = v1 + m_cellHeight;
 
             GlyphUV uv{
@@ -169,6 +202,7 @@ void TerminalRenderer::rebuildAtlas() {
             };
 
             m_uvCache[cp] = uv;
+            idx += range.wide ? 2 : 1;
         }
     }
 
@@ -385,12 +419,18 @@ QSGNode *TerminalRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData
             } else {
                 const uint32_t renderCp = (cp == 0) ? ' ' : cp;
                 const GlyphUV &uv = m_uvCache.value(renderCp, m_spaceUV);
-                glyphVertSpan[tvi + 0].set(x1, y1, uv.u1, uv.v1, fgR, fgG, fgB, 1.0F);
-                glyphVertSpan[tvi + 1].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
-                glyphVertSpan[tvi + 2].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
-                glyphVertSpan[tvi + 3].set(x2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
-                glyphVertSpan[tvi + 4].set(x1, y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
-                glyphVertSpan[tvi + 5].set(x2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1.0F);
+                // isWideAtlasGlyph: NF PUA ranges have 2-cell atlas slots regardless of
+                // cell.width (libvterm always reports 1 for PUA via wcwidth).
+                // cell.width == 2: fallback for genuinely wide Unicode chars (CJK etc.).
+                const auto gx2 = (isWideAtlasGlyph(renderCp) || cell.width == 2)
+                    ? static_cast<float>(x1 + 2.0F * static_cast<float>(m_cellWidth))
+                    : x2;
+                glyphVertSpan[tvi + 0].set(x1,  y1, uv.u1, uv.v1, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 1].set(x1,  y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 2].set(gx2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 3].set(gx2, y1, uv.u2, uv.v1, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 4].set(x1,  y2, uv.u1, uv.v2, fgR, fgG, fgB, 1.0F);
+                glyphVertSpan[tvi + 5].set(gx2, y2, uv.u2, uv.v2, fgR, fgG, fgB, 1.0F);
                 tvi += kVerticesPerCell;
             }
             // NOLINTEND(*-magic-numbers)

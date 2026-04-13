@@ -76,5 +76,13 @@ if(BUILD_TERMINAL)
     target_include_directories(test_TerminalRenderer PRIVATE ../src)
     target_link_libraries(test_TerminalRenderer PRIVATE Qt6::Core Qt6::Quick Qt6::Test TraceUITerminal)
     set_property(TARGET test_TerminalRenderer PROPERTY AUTOMOC ON)
+    # Embed bundled fonts so testBundledFontsLoad can load them from :/fonts/…
+    qt6_add_resources(test_TerminalRenderer "test-renderer-fonts"
+        PREFIX "/"
+        BASE "../src"
+        FILES
+            ../src/fonts/Hack-Regular.ttf
+            ../src/fonts/NF/SymbolsNerdFontMono-Regular.ttf
+    )
     add_test(NAME test_TerminalRenderer COMMAND test_TerminalRenderer)
 endif()

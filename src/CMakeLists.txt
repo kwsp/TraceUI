@@ -82,6 +82,7 @@ qt6_add_resources(${PROJECT_NAME} "traceui-resources"
   FILES
     fonts/BlenderPro-Book.ttf
     fonts/Hack-Regular.ttf
+    fonts/NF/SymbolsNerdFontMono-Regular.ttf
 )
 
 qt6_add_shaders(${PROJECT_NAME} "traceui-shaders"

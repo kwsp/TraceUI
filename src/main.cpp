@@ -1,3 +1,4 @@
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -35,6 +36,16 @@ int main(int argc, char *argv[]) {
     QSurfaceFormat::setDefaultFormat(format);
 
     QGuiApplication app(argc, argv);
+
+    // Load all fonts bundled in Qt resources. Without this they live only as raw bytes
+    // at their :/fonts/… path and are invisible to the font system.
+    const auto loadFont = [](const char *path) {
+        if (QFontDatabase::addApplicationFont(QLatin1String(path)) == -1)
+            qWarning("Failed to load bundled font: %s", path);
+    };
+    loadFont(":/fonts/Hack-Regular.ttf");
+    loadFont(":/fonts/BlenderPro-Book.ttf");
+    loadFont(":/fonts/NF/SymbolsNerdFontMono-Regular.ttf");
 
 #ifdef Q_OS_MACOS
     SystemMonitorMacOS systemMonitor;
