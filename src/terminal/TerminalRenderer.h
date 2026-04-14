@@ -2,8 +2,8 @@
 
 #include "EmojiAtlas.h"
 #include "EmojiMaterial.h"
+#include "GlyphAtlas.h"
 #include "GlyphMaterial.h"
-#include "SymbolAtlas.h"
 #include "TerminalBackend.h"
 #include <QHash>
 #include <QQuickItem>
@@ -56,33 +56,22 @@ signals:
     void cellMetricsChanged();
 
 private:
-    void rebuildAtlas();
     void recalcMetrics();
 
-    // ── Font / Atlas ─────────────────────────────────────────────────────────
+    // ── Font / Metrics ───────────────────────────────────────────────────────
     QString m_fontFamily{"Hack"};
     int m_fontSize{14};
     qreal m_cellWidth{};
     qreal m_cellHeight{};
     qreal m_ascent{};
-    bool m_atlasDirty{true};
 
-    QRawFont m_rawFont;
-
-    // Codepoint → UV rect in atlas.  Keyed by Unicode codepoint (not glyph index).
-    QHash<uint32_t, GlyphUV> m_uvCache; // codepoint → UV
-    GlyphUV m_spaceUV{};                // fallback for missing glyphs
-
-    QImage m_atlasImage;          // kept for re-upload
-    QSGTexture *m_atlasTexture{}; // owned by scene graph
+    // ── Glyph Atlas (Pre-rendered ASCII + Lazy Symbols) ──────────────────────
+    GlyphAtlas m_glyphAtlas;
+    QSGTexture *m_glyphTexture{}; // owned by scene graph
 
     // ── Emoji Atlas ──────────────────────────────────────────────────────────
     EmojiAtlas m_emojiAtlas;
     QSGTexture *m_emojiTexture{}; // owned by scene graph
-
-    // ── Symbol Atlas (Nerd Font SPUA-A, lazy, fg-tinted) ─────────────────────
-    SymbolAtlas m_symbolAtlas;
-    QSGTexture *m_symbolTexture{}; // owned by scene graph
 
     // ── Backend ──────────────────────────────────────────────────────────────
     TerminalBackend *m_backend{};

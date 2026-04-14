@@ -5,12 +5,13 @@
 #include <cmath>
 
 bool isEmoji(uint32_t cp) {
-    if (cp == static_cast<uint32_t>(-1)) return false; // libvterm continuation-cell sentinel
-    if (cp >= 0xE000  && cp <= 0xF8FF)  return false; // Basic PUA (Nerd Font icons)
-    if (cp >= 0xF0000 && cp <= 0xFFFFF) return false; // Supplementary PUA-A (Nerd Fonts v3)
-    return (cp >= 0x1F000)
-        || (cp >= 0x2600 && cp <= 0x27BF)
-        || (cp >= 0x2300 && cp <= 0x23FF);
+    if (cp == static_cast<uint32_t>(-1))
+        return false; // libvterm continuation-cell sentinel
+    if (cp >= 0xE000 && cp <= 0xF8FF)
+        return false; // Basic PUA (Nerd Font icons)
+    if (cp >= 0xF0000 && cp <= 0xFFFFF)
+        return false; // Supplementary PUA-A (Nerd Fonts v3)
+    return (cp >= 0x1F000) || (cp >= 0x2600 && cp <= 0x27BF) || (cp >= 0x2300 && cp <= 0x23FF);
 }
 
 void EmojiAtlas::setCellSize(qreal cellW, qreal cellH, qreal dpr, qreal emojiHeight) {
@@ -37,8 +38,8 @@ void EmojiAtlas::setCellSize(qreal cellW, qreal cellH, qreal dpr, qreal emojiHei
     m_dirty = true;
 }
 
-bool EmojiAtlas::ensureGlyph(uint32_t cp) {
-    if (m_uvCache.contains(cp))
+bool EmojiAtlas::ensureGlyph(uint32_t codepoint) {
+    if (m_uvCache.contains(codepoint))
         return false;
     if (m_slotsFilled >= kMaxSlots)
         return false;
@@ -59,8 +60,7 @@ bool EmojiAtlas::ensureGlyph(uint32_t cp) {
     const qreal logY = row * slotH;
 
     QFont font;
-    font.setFamilies({QStringLiteral("Apple Color Emoji"),
-                      QStringLiteral("Noto Color Emoji"),
+    font.setFamilies({QStringLiteral("Apple Color Emoji"), QStringLiteral("Noto Color Emoji"),
                       QStringLiteral("Segoe UI Emoji")});
     font.setPixelSize(static_cast<int>(m_emojiSize));
 
@@ -69,7 +69,7 @@ bool EmojiAtlas::ensureGlyph(uint32_t cp) {
     QPainter painter(&m_image);
     painter.setFont(font);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
-    const char32_t ucs4cp = static_cast<char32_t>(cp);
+    const char32_t ucs4cp = static_cast<char32_t>(codepoint);
     const QString str = QString::fromUcs4(&ucs4cp, 1);
     painter.drawText(QPointF(logX + kMargin, logY + kMargin + fm.ascent()), str);
     painter.end();
@@ -81,7 +81,7 @@ bool EmojiAtlas::ensureGlyph(uint32_t cp) {
         .v2 = static_cast<float>((logY + kMargin + m_cellH) / atlasLogH),
     };
 
-    m_uvCache[cp] = uv;
+    m_uvCache[codepoint] = uv;
     m_dirty = true;
     return true;
 }
