@@ -11,6 +11,12 @@ qt6_add_qml_module(TraceUITerminal
         TerminalRenderer.cpp
         GlyphMaterial.h
         GlyphMaterial.cpp
+        EmojiMaterial.h
+        EmojiMaterial.cpp
+        EmojiAtlas.h
+        EmojiAtlas.cpp
+        GlyphAtlas.h
+        GlyphAtlas.cpp
         FileDescriptor.h
         FileDescriptor.cpp
 )
@@ -28,6 +34,14 @@ qt6_add_shaders(TraceUITerminal "glyph_shaders"
     FILES
         shaders/glyph.vert
         shaders/glyph.frag
+)
+
+qt6_add_shaders(TraceUITerminal "emoji_shaders"
+    PREFIX
+        "/terminal"
+    FILES
+        shaders/emoji.vert
+        shaders/emoji.frag
 )
 
 target_link_libraries(TraceUITerminal PUBLIC

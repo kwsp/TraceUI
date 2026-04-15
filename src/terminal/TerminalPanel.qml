@@ -12,9 +12,9 @@ FocusScope {
     }
 
     Component.onCompleted: {
-        renderer.updateGridSize()
-        termBackend.start()
-        root.forceActiveFocus()
+        renderer.updateGridSize();
+        termBackend.start();
+        root.forceActiveFocus();
     }
 
     Rectangle {
@@ -42,10 +42,10 @@ FocusScope {
 
             function updateGridSize() {
                 if (width > 0 && height > 0 && cellWidth > 0 && cellHeight > 0) {
-                    let newCols = Math.floor(width / cellWidth)
-                    let newRows = Math.floor(height / cellHeight)
+                    let newCols = Math.floor(width / cellWidth);
+                    let newRows = Math.floor(height / cellHeight);
                     if (newCols > 0 && newRows > 0) {
-                        termBackend.resize(newRows, newCols)
+                        termBackend.resize(newRows, newCols);
                     }
                 }
             }
@@ -60,64 +60,74 @@ FocusScope {
             opacity: cursorBlink.running ? cursorOpacity : 1.0
             x: renderer.x + termBackend.cursorCol * renderer.cellWidth
             y: renderer.y + termBackend.cursorRow * renderer.cellHeight
-            visible: root.activeFocus
-                     && y >= renderer.y
-                     && y + height <= renderer.y + renderer.height
+            visible: root.activeFocus && y >= renderer.y && y + height <= renderer.y + renderer.height
 
             property real cursorOpacity: 1.0
             SequentialAnimation {
                 id: cursorBlink
                 loops: Animation.Infinite
                 running: root.activeFocus
-                NumberAnimation { target: cursor; property: "cursorOpacity"; from: 1.0; to: 0.0; duration: 500 }
-                NumberAnimation { target: cursor; property: "cursorOpacity"; from: 0.0; to: 1.0; duration: 500 }
+                NumberAnimation {
+                    target: cursor
+                    property: "cursorOpacity"
+                    from: 1.0
+                    to: 0.0
+                    duration: 500
+                }
+                NumberAnimation {
+                    target: cursor
+                    property: "cursorOpacity"
+                    from: 0.0
+                    to: 1.0
+                    duration: 500
+                }
             }
         }
     }
 
     // Keyboard handling
     focus: true
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (event.modifiers & Qt.ControlModifier) {
             if (event.key >= Qt.Key_A && event.key <= Qt.Key_Z) {
-                let ctrlKey = String.fromCharCode(event.key - Qt.Key_A + 1)
-                termBackend.sendInput(ctrlKey)
-                event.accepted = true
-                return
+                let ctrlKey = String.fromCharCode(event.key - Qt.Key_A + 1);
+                termBackend.sendInput(ctrlKey);
+                event.accepted = true;
+                return;
             }
         }
 
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            termBackend.sendInput("\r")
+            termBackend.sendInput("\r");
         } else if (event.key === Qt.Key_Backspace) {
-            termBackend.sendInput("\x7f")
+            termBackend.sendInput("\x7f");
         } else if (event.key === Qt.Key_Tab) {
-            termBackend.sendInput("\t")
+            termBackend.sendInput("\t");
         } else if (event.key === Qt.Key_Escape) {
-            termBackend.sendInput("\x1b")
+            termBackend.sendInput("\x1b");
         } else if (event.key === Qt.Key_Up) {
-            termBackend.sendInput("\x1b[A")
+            termBackend.sendInput("\x1b[A");
         } else if (event.key === Qt.Key_Down) {
-            termBackend.sendInput("\x1b[B")
+            termBackend.sendInput("\x1b[B");
         } else if (event.key === Qt.Key_Right) {
-            termBackend.sendInput("\x1b[C")
+            termBackend.sendInput("\x1b[C");
         } else if (event.key === Qt.Key_Left) {
-            termBackend.sendInput("\x1b[D")
+            termBackend.sendInput("\x1b[D");
         } else if (event.key === Qt.Key_Home) {
-            termBackend.sendInput("\x1b[H")
+            termBackend.sendInput("\x1b[H");
         } else if (event.key === Qt.Key_End) {
-            termBackend.sendInput("\x1b[F")
+            termBackend.sendInput("\x1b[F");
         } else if (event.key === Qt.Key_Delete) {
-            termBackend.sendInput("\x1b[3~")
+            termBackend.sendInput("\x1b[3~");
         } else if (event.key === Qt.Key_PageUp) {
-            termBackend.sendInput("\x1b[5~")
+            termBackend.sendInput("\x1b[5~");
         } else if (event.key === Qt.Key_PageDown) {
-            termBackend.sendInput("\x1b[6~")
+            termBackend.sendInput("\x1b[6~");
         } else if (event.text.length > 0) {
-            termBackend.sendInput(event.text)
+            termBackend.sendInput(event.text);
         } else {
-            return
+            return;
         }
-        event.accepted = true
+        event.accepted = true;
     }
 }
